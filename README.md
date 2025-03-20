@@ -6,7 +6,7 @@ Este es un simple formulario de inicio de sesión con diseño moderno, ideal par
 
 Haz clic en el siguiente enlace para abrir la página de inicio de sesión:
 
-[Acceder al Login](https:///jeuryblackrain.github.io/Prestan2//Login.html/)
+[Acceder al Login](https://jeuryblackrain.github.io/Prestan2/)
 
 ## 📂 Archivos principales
 - **index.html** → Página principal con el formulario de login.
