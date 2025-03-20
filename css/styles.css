@@ -15,6 +15,14 @@ body {
     text-align: center;
     width: 300px;
 }
+.brand {
+    font-size: 24px;
+    font-weight: bold;
+    background: linear-gradient(45deg, #007BFF, #FF5733);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+}
 h2 {
     margin-bottom: 20px;
     color: #333;
