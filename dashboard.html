@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio</title>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,75 +12,85 @@
             background-color: #f4f4f4;
         }
         .navbar {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #007bff;
-            color: white;
-            padding: 15px;
+        }
+        .navbar h2 {
+            margin: 0;
         }
         .menu {
             display: flex;
+            justify-content: center;
+            margin-top: 20px;
         }
         .menu button {
-            background: none;
+            margin: 10px;
+            padding: 15px 20px;
             border: none;
-            color: white;
-            padding: 10px 20px;
             cursor: pointer;
-            transition: background 0.3s;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: transform 0.2s, background 0.3s;
         }
         .menu button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
+            transform: scale(1.1);
         }
-        .container {
-            padding: 20px;
+        .menu .opcion1 { background: #28a745; color: white; }
+        .menu .opcion1:hover { background: #218838; }
+        .menu .opcion2 { background: #ffc107; color: black; }
+        .menu .opcion2:hover { background: #e0a800; }
+        .menu .opcion3 { background: #dc3545; color: white; }
+        .menu .opcion3:hover { background: #c82333; }
+        .logout {
+            background: #343a40;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .logout:hover {
+            background: #23272b;
         }
     </style>
 </head>
 <body>
+
     <div class="navbar">
-        <div id="user-info">Bienvenido, <span id="user-name"></span></div>
-        <div id="current-date"></div>
+        <h2>Bienvenido, <span id="nombreUsuario"></span></h2>
+        <span id="fechaActual"></span>
+        <button class="logout" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
+
     <div class="menu">
-        <button onclick="showSection('home')">Inicio</button>
-        <button onclick="showSection('profile')">Perfil</button>
-        <button onclick="showSection('settings')">Configuración</button>
-        <button onclick="logout()">Cerrar Sesión</button>
-    </div>
-    <div class="container" id="content">
-        <h2>Bienvenido a la página de inicio</h2>
+        <button class="opcion1" onclick="alert('Opción 1 seleccionada')">Opción 1</button>
+        <button class="opcion2" onclick="alert('Opción 2 seleccionada')">Opción 2</button>
+        <button class="opcion3" onclick="alert('Opción 3 seleccionada')">Opción 3</button>
     </div>
 
     <script>
-        // Obtener usuario logueado
+        // Verificar si hay una sesión activa
         const usuario = sessionStorage.getItem("usuario");
+        const fecha = sessionStorage.getItem("fecha");
+
         if (!usuario) {
-            window.location.href = "index.html";
+            window.location.href = "Index.html"; // Redirige si no hay sesión activa
         } else {
-            document.getElementById("user-name").textContent = usuario;
+            document.getElementById("nombreUsuario").textContent = usuario;
+            document.getElementById("fechaActual").textContent = "Fecha: " + fecha;
         }
 
-        // Mostrar fecha actual
-        document.getElementById("current-date").textContent = new Date().toLocaleDateString();
-
-        function showSection(section) {
-            const content = document.getElementById("content");
-            if (section === 'home') {
-                content.innerHTML = "<h2>Página de inicio</h2>";
-            } else if (section === 'profile') {
-                content.innerHTML = "<h2>Perfil del usuario</h2>";
-            } else if (section === 'settings') {
-                content.innerHTML = "<h2>Configuración</h2>";
-            }
-        }
-
-        function logout() {
-            sessionStorage.removeItem("usuario");
-            window.location.href = "index.html";
+        // Función para cerrar sesión
+        function cerrarSesion() {
+            sessionStorage.clear(); // Eliminar sesión
+            window.location.href = "Index.html"; // Redirigir al login
         }
     </script>
+
 </body>
 </html>

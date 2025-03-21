@@ -55,7 +55,7 @@
 
     <script>
         // 🔹 Configuración Firebase (agrega tus credenciales)
-      const firebaseConfig = {
+           const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -64,6 +64,8 @@
           messagingSenderId: "758979429000",
           appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
     };
+
+        
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("usuarios");
 
@@ -80,18 +82,20 @@
 
             // 🔹 Buscar el usuario en la base de datos
             dbRef.once("value", (snapshot) => {
-                let encontrado = false;
+                let usuarioEncontrado = null;
 
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
                     if (data.usuario === usuario && data.contraseña === contraseña) {
-                        encontrado = true;
-                        localStorage.setItem("usuario", usuario); // Guardar sesión
-                        window.location.href = "dashboard.html"; // Redirigir al Dashboard
+                        usuarioEncontrado = data;
                     }
                 });
 
-                if (!encontrado) {
+                if (usuarioEncontrado) {
+                    sessionStorage.setItem("usuario", usuarioEncontrado.nombre); // Guardar el nombre del usuario
+                    sessionStorage.setItem("fecha", new Date().toLocaleDateString()); // Guardar la fecha actual
+                    window.location.href = "dashboard.html"; // Redirigir
+                } else {
                     mensajeError.textContent = "Usuario o contraseña incorrectos.";
                 }
             });
