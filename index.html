@@ -6,6 +6,8 @@
     <title>Iniciar Sesión</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,35 +66,40 @@
           messagingSenderId: "758979429000",
           appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
     };
+
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("usuarios");
 
         // 🔹 Función para iniciar sesión
         function iniciarSesion() {
             const usuario = document.getElementById("usuario").value.trim();
-            const contraseña = document.getElementById("contraseña").value.trim();
+            const contraseñaIngresada = document.getElementById("contraseña").value.trim();
             const mensajeError = document.getElementById("mensajeError");
 
-            if (!usuario || !contraseña) {
+            if (!usuario || !contraseñaIngresada) {
                 mensajeError.textContent = "Por favor, ingresa usuario y contraseña.";
                 return;
             }
 
-            // 🔹 Buscar el usuario en la base de datos
-            dbRef.once("value", (snapshot) => {
-                let encontrado = false;
+            // 🔹 Buscar el usuario en Firebase
+            dbRef.orderByChild("usuario").equalTo(usuario).once("value", (snapshot) => {
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        const data = childSnapshot.val();
+                        const contraseñaGuardada = data.contraseña; // Contraseña cifrada
 
-                snapshot.forEach((childSnapshot) => {
-                    const data = childSnapshot.val();
-                    if (data.usuario === usuario && data.contraseña === contraseña) {
-                        encontrado = true;
-                        localStorage.setItem("usuario", usuario); // Guardar sesión
-                        window.location.href = "dashboard.html"; // Redirigir al Dashboard
-                    }
-                });
-
-                if (!encontrado) {
-                    mensajeError.textContent = "Usuario o contraseña incorrectos.";
+                        // 🔹 Comparar contraseña ingresada con la cifrada
+                        bcrypt.compare(contraseñaIngresada, contraseñaGuardada, (err, esCorrecto) => {
+                            if (esCorrecto) {
+                                localStorage.setItem("usuario", usuario); // Guardar sesión
+                                window.location.href = "dashboard.html"; // Redirigir
+                            } else {
+                                mensajeError.textContent = "Usuario o contraseña incorrectos.";
+                            }
+                        });
+                    });
+                } else {
+                    mensajeError.textContent = "Usuario no encontrado.";
                 }
             });
         }
