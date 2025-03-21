@@ -12,6 +12,8 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
     }
 });
 
+
+
 function abrirFormulario() {
     document.getElementById("userForm").style.display = "block";
 }
