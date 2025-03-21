@@ -16,6 +16,9 @@
   // Inicializar Firebase
   firebase.initializeApp(firebaseConfig);
   const database = firebase.database();
+
+   console.log("Firebase conectado correctamente");
+
 </script>
 
 
