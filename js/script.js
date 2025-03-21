@@ -1,27 +1,15 @@
-document.getElementById("loginForm").addEventListener("submit", function(event) {
-    event.preventDefault();
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const errorMessage = document.getElementById("error-message");
-    
-    if (username === "admin" && password === "1234") {
-        alert("Bienvenido a Prestan2");
-        window.location.href = "portal.html";
-    } else {
-        errorMessage.textContent = "Usuario o contraseña incorrectos";
-    }
-});
+// Importar Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
+// Configuración de Firebase (importada desde firebase-config.js)
+import { firebaseConfig } from "../Database/firebase-config.js";
 
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-function abrirFormulario() {
-    document.getElementById("userForm").style.display = "block";
-}
-
-function cerrarFormulario() {
-    document.getElementById("userForm").style.display = "none";
-}
-
+// Función para guardar usuario en un directorio específico (Ejemplo: "usuarios")
 function guardarUsuario() {
     const fullName = document.getElementById("fullName").value;
     const username = document.getElementById("username").value;
@@ -29,55 +17,32 @@ function guardarUsuario() {
     const phone = document.getElementById("phone").value;
     const email = document.getElementById("email").value;
     const registerDate = document.getElementById("registerDate").value;
-    
-    const newUserRef = db.ref("usuarios").push();
-    newUserRef.set({
-        nombre: fullName,
-        usuario: username,
-        contraseña: password,
-        telefono: phone,
-        email: email,
-        fechaRegistro: registerDate
-    }, (error) => {
-        if (error) {
-            alert("Error al guardar usuario");
-        } else {
-            alert("Usuario guardado exitosamente");
+
+    if (fullName && username && password && phone && email && registerDate) {
+        const usersRef = ref(db, "usuarios/"); // Directorio específico dentro de la base de datos
+        const newUserRef = push(usersRef);
+
+        set(newUserRef, {
+            fullName,
+            username,
+            password,
+            phone,
+            email,
+            registerDate
+        })
+        .then(() => {
+            alert("Usuario guardado correctamente");
             cerrarFormulario();
-        }
-    });
+        })
+        .catch((error) => {
+            console.error("Error al guardar el usuario:", error);
+        });
+    } else {
+        alert("Todos los campos son obligatorios");
+    }
 }
 
-
-document.addEventListener("DOMContentLoaded", function () {
-    function guardarUsuario() {
-        const fullName = document.getElementById("fullName").value;
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        const phone = document.getElementById("phone").value;
-        const email = document.getElementById("email").value;
-        const registerDate = document.getElementById("registerDate").value;
-
-        if (!firebase || !firebase.database) {
-            console.error("Firebase no está inicializado correctamente.");
-            return;
-        }
-
-        const newUserRef = firebase.database().ref("usuarios").push();
-        newUserRef.set({
-            nombre: fullName,
-            usuario: username,
-            contraseña: password,
-            telefono: phone,
-            email: email,
-            fechaRegistro: registerDate
-        }).then(() => {
-            alert("Usuario guardado exitosamente");
-            cerrarFormulario();
-        }).catch((error) => {
-            alert("Error al guardar usuario: " + error);
-        });
-    }
-
-    document.getElementById("guardarUsuarioBtn").addEventListener("click", guardarUsuario);
-});
+// Función para cerrar el formulario
+function cerrarFormulario() {
+    document.getElementById("userForm").style.display = "none";
+}
