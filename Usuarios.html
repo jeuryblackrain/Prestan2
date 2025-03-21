@@ -6,7 +6,6 @@
     <title>CRUD con Firebase Realtime Database</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,132 +88,7 @@
 
     <script>
         // 🔹 Configuración Firebase (agrega tus credenciales)
-        const firebaseConfig = {
-          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
-          authDomain: "prestan2-6059e.firebaseapp.com",
-          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
-          projectId: "prestan2-6059e",
-          storageBucket: "prestan2-6059e.firebasestorage.app",
-          messagingSenderId: "758979429000",
-          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
-    };
-
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref("usuarios");
-
-        // 🔹 Crear usuario con contraseña cifrada
-        function crearUsuario() {
-            const nombre = document.getElementById("nombre").value.trim();
-            const usuario = document.getElementById("usuario").value.trim();
-            const contraseña = document.getElementById("contraseña").value.trim();
-            const telefono = document.getElementById("telefono").value.trim();
-            const fecha = document.getElementById("fecha").value.trim();
-
-            if (!nombre || !usuario || !contraseña || !telefono || !fecha) {
-                alert("Todos los campos son obligatorios.");
-                return;
-            }
-
-            bcrypt.hash(contraseña, 10, function(err, hash) {
-                if (err) {
-                    alert("Error al cifrar la contraseña.");
-                    return;
-                }
-
-                const nuevoUsuario = dbRef.push();
-                nuevoUsuario.set({ 
-                    nombre, 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRUD con Firebase Realtime Database</title>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            background: #fff;
-            padding: 20px;
-            margin: auto;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        input {
-            width: 95%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            background: #28a745;
-            border-radius: 5px;
-        }
-        button:hover {
-            background: #218838;
-        }
-        .delete-btn {
-            background: #dc3545;
-        }
-        .delete-btn:hover {
-            background: #c82333;
-        }
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background: #007bff;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Registro de Usuarios</h2>
-        <input type="text" id="nombre" placeholder="Nombre">
-        <input type="text" id="usuario" placeholder="Usuario">
-        <input type="password" id="contraseña" placeholder="Contraseña">
-        <input type="tel" id="telefono" placeholder="Teléfono">
-        <input type="date" id="fecha" placeholder="Fecha de nacimiento">
-        <button onclick="crearUsuario()">Registrar</button>
-
-        <h3>Lista de Usuarios</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Usuario</th>
-                    <th>Teléfono</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaUsuarios"></tbody>
-        </table>
-    </div>
-
-    <script>
-        // 🔹 Configuración Firebase (agrega tus credenciales)
-           const firebaseConfig = {
+         const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
