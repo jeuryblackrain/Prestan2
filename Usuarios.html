@@ -6,6 +6,7 @@
     <title>CRUD con Firebase Realtime Database</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -45,6 +46,12 @@
         }
         .delete-btn:hover {
             background: #c82333;
+        }
+        .reset-btn {
+            background: #ffc107;
+        }
+        .reset-btn:hover {
+            background: #e0a800;
         }
         table {
             width: 100%;
@@ -88,7 +95,7 @@
 
     <script>
         // 🔹 Configuración Firebase (agrega tus credenciales)
-         const firebaseConfig = {
+      const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -97,6 +104,7 @@
           messagingSenderId: "758979429000",
           appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
     };
+
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("usuarios");
 
@@ -113,14 +121,27 @@
                 return;
             }
 
-            const nuevoUsuario = dbRef.push();
-            nuevoUsuario.set({ nombre, usuario, contraseña, telefono, fecha });
+            bcrypt.hash(contraseña, 10, function(err, hash) {
+                if (err) {
+                    alert("Error al cifrar la contraseña.");
+                    return;
+                }
 
-            document.getElementById("nombre").value = "";
-            document.getElementById("usuario").value = "";
-            document.getElementById("contraseña").value = "";
-            document.getElementById("telefono").value = "";
-            document.getElementById("fecha").value = "";
+                const nuevoUsuario = dbRef.push();
+                nuevoUsuario.set({ 
+                    nombre, 
+                    usuario, 
+                    contraseña: hash, 
+                    telefono, 
+                    fecha 
+                });
+
+                document.getElementById("nombre").value = "";
+                document.getElementById("usuario").value = "";
+                document.getElementById("contraseña").value = "";
+                document.getElementById("telefono").value = "";
+                document.getElementById("fecha").value = "";
+            });
         }
 
         // 🔹 Leer usuarios en tiempo real
@@ -140,39 +161,7 @@
                     <td>${data.fecha}</td>
                     <td>
                         <button onclick="actualizarUsuario('${key}', '${data.nombre}', '${data.usuario}', '${data.telefono}', '${data.fecha}')">Editar</button>
+                        <button class="reset-btn" onclick="resetearContraseña('${key}', '${data.usuario}')">Resetear Contraseña</button>
                         <button class="delete-btn" onclick="eliminarUsuario('${key}')">Eliminar</button>
                     </td>
-                `;
-                tabla.appendChild(row);
-            });
-        });
-
-        // 🔹 Actualizar usuario
-        function actualizarUsuario(id, nombreActual, usuarioActual, telefonoActual, fechaActual) {
-            const nuevoNombre = prompt("Nuevo nombre:", nombreActual)?.trim();
-            const nuevoUsuario = prompt("Nuevo usuario:", usuarioActual)?.trim();
-            const nuevoTelefono = prompt("Nuevo teléfono:", telefonoActual)?.trim();
-            const nuevaFecha = prompt("Nueva fecha de nacimiento:", fechaActual)?.trim();
-
-            if (!nuevoNombre || !nuevoUsuario || !nuevoTelefono || !nuevaFecha) {
-                alert("Todos los campos deben estar completos.");
-                return;
-            }
-
-            dbRef.child(id).update({ 
-                nombre: nuevoNombre, 
-                usuario: nuevoUsuario, 
-                telefono: nuevoTelefono, 
-                fecha: nuevaFecha 
-            });
-        }
-
-        // 🔹 Eliminar usuario
-        function eliminarUsuario(id) {
-            if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-                dbRef.child(id).remove();
-            }
-        }
-    </script>
-</body>
-</html>
+        
