@@ -18,6 +18,5 @@
   const database = firebase.database();
 </script>
 
-//  console.log("Firebase conectado correctamente");
 
 
