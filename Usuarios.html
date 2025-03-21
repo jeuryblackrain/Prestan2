@@ -95,7 +95,7 @@
 
     <script>
         // 🔹 Configuración Firebase (agrega tus credenciales)
-      const firebaseConfig = {
+         const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -164,4 +164,63 @@
                         <button class="reset-btn" onclick="resetearContraseña('${key}', '${data.usuario}')">Resetear Contraseña</button>
                         <button class="delete-btn" onclick="eliminarUsuario('${key}')">Eliminar</button>
                     </td>
-        
+                `;
+                tabla.appendChild(row);
+            });
+        });
+
+        // 🔹 Actualizar usuario
+        function actualizarUsuario(id, nombreActual, usuarioActual, telefonoActual, fechaActual) {
+            const nuevoNombre = prompt("Nuevo nombre:", nombreActual)?.trim();
+            const nuevoUsuario = prompt("Nuevo usuario:", usuarioActual)?.trim();
+            const nuevoTelefono = prompt("Nuevo teléfono:", telefonoActual)?.trim();
+            const nuevaFecha = prompt("Nueva fecha de nacimiento:", fechaActual)?.trim();
+
+            if (!nuevoNombre || !nuevoUsuario || !nuevoTelefono || !nuevaFecha) {
+                alert("Todos los campos deben estar completos.");
+                return;
+            }
+
+            dbRef.child(id).update({ 
+                nombre: nuevoNombre, 
+                usuario: nuevoUsuario, 
+                telefono: nuevoTelefono, 
+                fecha: nuevaFecha 
+            });
+        }
+
+        // 🔹 Resetear contraseña
+        function resetearContraseña(id, usuario) {
+            if (!confirm(`¿Estás seguro de que deseas resetear la contraseña de ${usuario}?`)) return;
+
+            const nuevaContraseña = generarContraseñaAleatoria(10);
+            bcrypt.hash(nuevaContraseña, 10, function(err, hash) {
+                if (err) {
+                    alert("Error al cifrar la nueva contraseña.");
+                    return;
+                }
+
+                dbRef.child(id).update({ contraseña: hash });
+                alert(`La nueva contraseña de ${usuario} es: ${nuevaContraseña}`);
+            });
+        }
+
+        // 🔹 Generar una contraseña aleatoria
+        function generarContraseñaAleatoria(longitud) {
+            const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+            let contraseña = "";
+            for (let i = 0; i < longitud; i++) {
+                contraseña += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+            }
+            return contraseña;
+        }
+
+        // 🔹 Eliminar usuario
+        function eliminarUsuario(id) {
+            if (confirm("¿Seguro que quieres eliminar este usuario?")) {
+                dbRef.child(id).remove();
+            }
+        }
+    </script>
+</body>
+</html>
