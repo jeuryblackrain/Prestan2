@@ -47,3 +47,37 @@ function guardarUsuario() {
         }
     });
 }
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    function guardarUsuario() {
+        const fullName = document.getElementById("fullName").value;
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const phone = document.getElementById("phone").value;
+        const email = document.getElementById("email").value;
+        const registerDate = document.getElementById("registerDate").value;
+
+        if (!firebase || !firebase.database) {
+            console.error("Firebase no está inicializado correctamente.");
+            return;
+        }
+
+        const newUserRef = firebase.database().ref("usuarios").push();
+        newUserRef.set({
+            nombre: fullName,
+            usuario: username,
+            contraseña: password,
+            telefono: phone,
+            email: email,
+            fechaRegistro: registerDate
+        }).then(() => {
+            alert("Usuario guardado exitosamente");
+            cerrarFormulario();
+        }).catch((error) => {
+            alert("Error al guardar usuario: " + error);
+        });
+    }
+
+    document.getElementById("guardarUsuarioBtn").addEventListener("click", guardarUsuario);
+});
