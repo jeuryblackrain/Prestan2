@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuarios - Prestan2</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="ccs/styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script src="Database/firebase-config.js"></script>
+    <script src="js/script.js"></script>
 </head>
 <body>
     <h1 class="logo">Prestan2</h1>
@@ -16,7 +20,10 @@
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
+                    <th>Usuario</th>
                     <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Fecha de Registro</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -26,17 +33,19 @@
         </table>
     </div>
     
-    <div id="userForm" class="modal">
+    <div id="userForm" class="modal" style="display: none;">
         <div class="modal-content">
             <h2 id="formTitle">Crear Usuario</h2>
             <input type="hidden" id="userId">
-            <input type="text" id="userName" placeholder="Nombre" required>
-            <input type="email" id="userEmail" placeholder="Email" required>
+            <input type="text" id="fullName" placeholder="Nombre Completo" required>
+            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <input type="tel" id="phone" placeholder="Teléfono" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="date" id="registerDate" required>
             <button onclick="guardarUsuario()">Guardar</button>
             <button onclick="cerrarFormulario()">Cancelar</button>
         </div>
     </div>
-    
-    <script src="usuarios.js"></script>
 </body>
 </html>
