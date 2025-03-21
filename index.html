@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRUD con Firebase Realtime Database</title>
+    <title>Iniciar Sesión</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 400px;
             background: #fff;
             padding: 20px;
             margin: auto;
@@ -24,71 +24,38 @@
         input {
             width: 95%;
             padding: 8px;
-            margin: 5px 0;
+            margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
         button {
             padding: 10px 15px;
-            margin: 5px;
             border: none;
             cursor: pointer;
             color: white;
-            background: #28a745;
+            background: #007bff;
             border-radius: 5px;
         }
         button:hover {
-            background: #218838;
+            background: #0056b3;
         }
-        .delete-btn {
-            background: #dc3545;
-        }
-        .delete-btn:hover {
-            background: #c82333;
-        }
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background: #007bff;
-            color: white;
+        .error {
+            color: red;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Registro de Usuarios</h2>
-        <input type="text" id="nombre" placeholder="Nombre">
+        <h2>Iniciar Sesión</h2>
         <input type="text" id="usuario" placeholder="Usuario">
         <input type="password" id="contraseña" placeholder="Contraseña">
-        <input type="tel" id="telefono" placeholder="Teléfono">
-        <input type="date" id="fecha" placeholder="Fecha de nacimiento">
-        <button onclick="crearUsuario()">Registrar</button>
-
-        <h3>Lista de Usuarios</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Usuario</th>
-                    <th>Teléfono</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaUsuarios"></tbody>
-        </table>
+        <button onclick="iniciarSesion()">Ingresar</button>
+        <p id="mensajeError" class="error"></p>
     </div>
 
     <script>
         // 🔹 Configuración Firebase (agrega tus credenciales)
-       const firebaseConfig = {
+      const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -97,82 +64,37 @@
           messagingSenderId: "758979429000",
           appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
     };
-
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("usuarios");
 
-        // 🔹 Crear usuario
-        function crearUsuario() {
-            const nombre = document.getElementById("nombre").value.trim();
+        // 🔹 Función para iniciar sesión
+        function iniciarSesion() {
             const usuario = document.getElementById("usuario").value.trim();
             const contraseña = document.getElementById("contraseña").value.trim();
-            const telefono = document.getElementById("telefono").value.trim();
-            const fecha = document.getElementById("fecha").value.trim();
+            const mensajeError = document.getElementById("mensajeError");
 
-            if (!nombre || !usuario || !contraseña || !telefono || !fecha) {
-                alert("Todos los campos son obligatorios.");
+            if (!usuario || !contraseña) {
+                mensajeError.textContent = "Por favor, ingresa usuario y contraseña.";
                 return;
             }
 
-            const nuevoUsuario = dbRef.push();
-            nuevoUsuario.set({ nombre, usuario, contraseña, telefono, fecha });
+            // 🔹 Buscar el usuario en la base de datos
+            dbRef.once("value", (snapshot) => {
+                let encontrado = false;
 
-            document.getElementById("nombre").value = "";
-            document.getElementById("usuario").value = "";
-            document.getElementById("contraseña").value = "";
-            document.getElementById("telefono").value = "";
-            document.getElementById("fecha").value = "";
-        }
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data.usuario === usuario && data.contraseña === contraseña) {
+                        encontrado = true;
+                        localStorage.setItem("usuario", usuario); // Guardar sesión
+                        window.location.href = "dashboard.html"; // Redirigir al Dashboard
+                    }
+                });
 
-        // 🔹 Leer usuarios en tiempo real
-        dbRef.on("value", (snapshot) => {
-            const tabla = document.getElementById("tablaUsuarios");
-            tabla.innerHTML = "";
-
-            snapshot.forEach((childSnapshot) => {
-                const key = childSnapshot.key;
-                const data = childSnapshot.val();
-
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${data.nombre}</td>
-                    <td>${data.usuario}</td>
-                    <td>${data.telefono}</td>
-                    <td>${data.fecha}</td>
-                    <td>
-                        <button onclick="actualizarUsuario('${key}', '${data.nombre}', '${data.usuario}', '${data.telefono}', '${data.fecha}')">Editar</button>
-                        <button class="delete-btn" onclick="eliminarUsuario('${key}')">Eliminar</button>
-                    </td>
-                `;
-                tabla.appendChild(row);
+                if (!encontrado) {
+                    mensajeError.textContent = "Usuario o contraseña incorrectos.";
+                }
             });
-        });
-
-        // 🔹 Actualizar usuario
-        function actualizarUsuario(id, nombreActual, usuarioActual, telefonoActual, fechaActual) {
-            const nuevoNombre = prompt("Nuevo nombre:", nombreActual)?.trim();
-            const nuevoUsuario = prompt("Nuevo usuario:", usuarioActual)?.trim();
-            const nuevoTelefono = prompt("Nuevo teléfono:", telefonoActual)?.trim();
-            const nuevaFecha = prompt("Nueva fecha de nacimiento:", fechaActual)?.trim();
-
-            if (!nuevoNombre || !nuevoUsuario || !nuevoTelefono || !nuevaFecha) {
-                alert("Todos los campos deben estar completos.");
-                return;
-            }
-
-            dbRef.child(id).update({ 
-                nombre: nuevoNombre, 
-                usuario: nuevoUsuario, 
-                telefono: nuevoTelefono, 
-                fecha: nuevaFecha 
-            });
-        }
-
-        // 🔹 Eliminar usuario
-        function eliminarUsuario(id) {
-            if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-                dbRef.child(id).remove();
-            }
         }
     </script>
 </body>
