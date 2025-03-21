@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios - Prestan2</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1 class="logo">Prestan2</h1>
+    <div class="usuarios-container">
+        <h2>Gestión de Usuarios</h2>
+        <button onclick="abrirFormulario()">Crear Nuevo Usuario</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="userTable">
+                <!-- Aquí se listarán los usuarios -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="userForm" class="modal">
+        <div class="modal-content">
+            <h2 id="formTitle">Crear Usuario</h2>
+            <input type="hidden" id="userId">
+            <input type="text" id="userName" placeholder="Nombre" required>
+            <input type="email" id="userEmail" placeholder="Email" required>
+            <button onclick="guardarUsuario()">Guardar</button>
+            <button onclick="cerrarFormulario()">Cancelar</button>
+        </div>
+    </div>
+    
+    <script src="usuarios.js"></script>
+</body>
+</html>
