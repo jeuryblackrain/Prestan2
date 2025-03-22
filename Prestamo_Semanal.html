@@ -71,7 +71,7 @@
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
-                    <th>Cuotas Restantes</th>
+                    <th>Cuota Actual</th>
                     <th>Usuario</th>
                     <th>Acciones</th>
                 </tr>
@@ -109,7 +109,7 @@
                         <tr>
                             <td>${data.cliente}</td>
                             <td>${data.monto}</td>
-                            <td>${data.cuotasRestantes}</td>
+                            <td>${13 - data.cuotasRestantes}/13</td>
                             <td>${data.usuario}</td>
                             <td>
                                 <button class="btn-abonar" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
@@ -137,19 +137,17 @@
         function imprimirFactura(prestamo, cuota, cuotasRestantes, fecha) {
             const factura = `
                 -------------------------------------------------
-                                Prestan2
-                La Solución a tus problemas
+                                   Prestan2
+                           La Solución a tus problemas
                 -------------------------------------------------
                 Fecha: ${fecha}
                 Cliente: ${prestamo.cliente}
-                Dirección: ${prestamo.direccion}
                 -------------------------------------------------
                 Monto abonado: $${cuota.toFixed(2)}
-                Número de cuota: ${13 - cuotasRestantes}
-                Cuotas restantes: ${cuotasRestantes}
+                Número de cuota: ${13 - cuotasRestantes}/13
                 Usuario: ${prestamo.usuario}
                 -------------------------------------------------
-                Gracias por su pago.
+                           Gracias por su pago.
                 -------------------------------------------------
             `;
             document.getElementById("facturaDetalle").innerText = factura;
@@ -161,15 +159,12 @@
             db.ref("clientes").once("value", snapshot => {
                 let clientes = [];
                 snapshot.forEach(child => {
-                    clientes.push({ id: child.key, nombre: child.val().nombre });
+                    clientes.push(child.val().nombre);
                 });
 
-                let opciones = clientes.map(c => `${c.id}: ${c.nombre}`).join("\n");
-                let seleccionado = prompt("Seleccione el ID del cliente:\n" + opciones);
-                let cliente = clientes.find(c => c.id === seleccionado);
-
-                if (!cliente) {
-                    alert("Cliente no válido");
+                let cliente = prompt("Ingrese el nombre del cliente:\n" + clientes.join("\n"));
+                if (!clientes.includes(cliente)) {
+                    alert("Cliente no encontrado.");
                     return;
                 }
 
@@ -177,7 +172,7 @@
                 let usuario = localStorage.getItem("usuario") || "Admin";
                 if (monto) {
                     db.ref("prestamos").push({
-                        cliente: cliente.nombre,
+                        cliente,
                         monto,
                         cuotasRestantes: 13,
                         usuario
@@ -188,8 +183,8 @@
 
         function registrarCliente() {
             const nombre = prompt("Nombre completo:");
-            const cedula = prompt("Cédula (Formato: 000-0000000-0):");
-            const telefono = prompt("Teléfono (Formato: 000-000-0000):");
+            const cedula = prompt("Cédula (000-0000000-0):");
+            const telefono = prompt("Teléfono (000-000-0000):");
             const direccion = prompt("Dirección:");
             if (nombre && cedula && telefono && direccion) {
                 db.ref("clientes").push({ nombre, cedula, telefono, direccion });
@@ -197,8 +192,8 @@
         }
 
         function renovarPrestamo(id, cuotasRestantes) {
-            if (cuotasRestantes < 10) {
-                alert("El cliente debe haber pagado al menos 10 cuotas para renovar.");
+            if (cuotasRestantes > 3) {
+                alert("Solo se puede renovar si quedan 3 cuotas o menos.");
                 return;
             }
             db.ref(`prestamos/${id}`).update({ cuotasRestantes: 13 });
@@ -212,14 +207,11 @@
                     imprimirFactura(data, data.monto, 0, new Date().toLocaleString());
                 }
                 db.ref(`prestamos/${id}`).remove();
-                alert("Préstamo saldado y eliminado de la base de datos.");
+                alert("Préstamo saldado y eliminado.");
             });
         }
 
         cargarPrestamos();
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
