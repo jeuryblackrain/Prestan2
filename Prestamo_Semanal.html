@@ -10,12 +10,12 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
-            padding: 20px;
+            text-align: center;
         }
         .container {
-            max-width: 800px;
+            width: 80%;
             margin: auto;
-            background: #fff;
+            background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
@@ -25,43 +25,38 @@
             border-collapse: collapse;
             margin-top: 20px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+        table, th, td {
+            border: 1px solid black;
         }
-        th {
-            background-color: #007bff;
-            color: white;
+        th, td {
+            padding: 10px;
+            text-align: center;
         }
         button {
             padding: 10px;
-            margin: 10px 5px;
-            cursor: pointer;
             border: none;
+            background: #007bff;
             color: white;
+            cursor: pointer;
             border-radius: 5px;
         }
-        .btn-registrar { background-color: #28a745; }
-        .btn-prestamo { background-color: #17a2b8; }
-        .btn-abonar { background-color: #ffc107; color: black; }
-        .btn-renovar { background-color: #6f42c1; }
-        .btn-saldar { background-color: #dc3545; }
+        button:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Préstamos Semanales</h2>
-        <button class="btn-registrar" onclick="registrarCliente()">Registrar Cliente</button>
-        <button class="btn-prestamo" onclick="nuevoPrestamo()">Nuevo Préstamo</button>
+        <button onclick="registrarCliente()">Registrar Cliente</button>
+        <button onclick="nuevoPrestamo()">Nuevo Préstamo</button>
         <table>
             <thead>
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
                     <th>Cuotas Restantes</th>
-                    <th>Usuario</th>
-                    <th>Acciones</th>
+                    <th>Opciones</th>
                 </tr>
             </thead>
             <tbody id="listaPrestamos"></tbody>
@@ -69,7 +64,7 @@
     </div>
 
     <script>
-              const firebaseConfig = {
+               const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -81,104 +76,79 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function cargarPrestamos() {
-            db.ref("prestamos").on("value", snapshot => {
-                const tbody = document.getElementById("listaPrestamos");
-                tbody.innerHTML = "";
-                snapshot.forEach(child => {
-                    const data = child.val();
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${data.cliente}</td>
-                            <td>${data.monto}</td>
-                            <td>${data.cuotasRestantes}</td>
-                            <td>${data.usuario}</td>
-                            <td>
-                                <button class="btn-abonar" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
-                                <button class="btn-renovar" onclick="renovarPrestamo('${child.key}')">Renovar</button>
-                                <button class="btn-saldar" onclick="saldarPrestamo('${child.key}')">Saldar</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            });
-        }
-
-        function abonar(prestamoId, cuota) {
-            const fecha = new Date().toLocaleString();
-            db.ref(`prestamos/${prestamoId}`).once("value", snapshot => {
-                const data = snapshot.val();
-                if (data.cuotasRestantes > 0) {
-                    const nuevasCuotas = data.cuotasRestantes - 1;
-                    db.ref(`prestamos/${prestamoId}`).update({ cuotasRestantes: nuevasCuotas });
-                    imprimirFactura(data, cuota, nuevasCuotas, fecha);
-                }
-            });
-        }
-
-        function imprimirFactura(prestamo, cuota, cuotasRestantes, fecha) {
-            const factura = `
-                -------------------------------------------------
-                                Prestan2
-                La Solución a tus problemas
-                -------------------------------------------------
-                Fecha: ${fecha}
-                Cliente: ${prestamo.cliente}
-                Dirección: ${prestamo.direccion}
-                -------------------------------------------------
-                Monto abonado: $${cuota.toFixed(2)}
-                Número de cuota: ${13 - cuotasRestantes}
-                Cuotas restantes: ${cuotasRestantes}
-                Usuario: ${prestamo.usuario}
-                -------------------------------------------------
-                Gracias por su pago.
-                -------------------------------------------------
-            `;
-            console.log(factura);
-            alert(factura);
-        }
-
-        function nuevoPrestamo() {
-            const cliente = prompt("Ingrese el nombre del cliente:");
-            const monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
-            const usuario = localStorage.getItem("usuario") || "Admin";
-            if (cliente && monto) {
-                db.ref("prestamos").push({
-                    cliente,
-                    monto,
-                    cuotasRestantes: 13,
-                    usuario
-                });
-            }
-        }
-
         function registrarCliente() {
             const nombre = prompt("Nombre completo:");
             const cedula = prompt("Cédula (Formato: 000-0000000-0):");
             const telefono = prompt("Teléfono (Formato: 000-000-0000):");
             const direccion = prompt("Dirección:");
             if (nombre && cedula && telefono && direccion) {
-                db.ref("clientes").push({ nombre, cedula, telefono, direccion });
+                const nuevoCliente = db.ref("clientes").push();
+                nuevoCliente.set({ nombre, cedula, telefono, direccion });
+                alert("Cliente registrado correctamente.");
             }
         }
 
-        function renovarPrestamo(id) {
-            db.ref(`prestamos/${id}`).once("value", snapshot => {
-                const data = snapshot.val();
-                if (data.cuotasRestantes <= 3) {
-                    db.ref(`prestamos/${id}`).update({ cuotasRestantes: 13 });
-                    alert("Préstamo renovado exitosamente.");
-                } else {
-                    alert("El cliente debe tener menos de 3 cuotas restantes para renovar.");
+        function nuevoPrestamo() {
+            db.ref("clientes").once("value", snapshot => {
+                let clientes = snapshot.val();
+                let opciones = "";
+                for (let id in clientes) {
+                    opciones += `${id}:${clientes[id].nombre}\n`;
+                }
+                let idCliente = prompt("Seleccione un cliente por ID:\n" + opciones);
+                if (idCliente && clientes[idCliente]) {
+                    let monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
+                    if (!isNaN(monto) && monto > 0) {
+                        let cuotas = monto / 10;
+                        let nuevoPrestamo = db.ref("prestamos").push();
+                        nuevoPrestamo.set({ cliente: clientes[idCliente].nombre, monto, cuotasRestantes: 13, usuario: "Admin" });
+                        alert("Préstamo registrado.");
+                        cargarPrestamos();
+                    }
                 }
             });
         }
 
-        function saldarPrestamo(id) {
-            db.ref(`prestamos/${id}`).remove();
-            alert("Préstamo saldado y eliminado de la base de datos.");
+        function abonar(key, monto) {
+            db.ref(`prestamos/${key}`).once("value", snapshot => {
+                let prestamo = snapshot.val();
+                if (prestamo.cuotasRestantes > 0) {
+                    let nuevoMonto = prestamo.monto - monto;
+                    let nuevasCuotas = prestamo.cuotasRestantes - 1;
+                    db.ref(`prestamos/${key}`).update({ monto: nuevoMonto, cuotasRestantes: nuevasCuotas });
+                    generarFactura(prestamo, monto, nuevasCuotas);
+                    alert("Abono realizado.");
+                    cargarPrestamos();
+                }
+            });
         }
 
+        function generarFactura(prestamo, abono, cuotasRestantes) {
+            let factura = `\n\n-------------------------------------------------\n                Prestan2\nLa Solucion a tus problemas\n-------------------------------------------------\nFecha: ${new Date().toLocaleDateString()}\nHora: ${new Date().toLocaleTimeString()}\n-------------------------------------------------\nCliente: ${prestamo.cliente}\n-------------------------------------------------\nDescripción              | Cantidad | Total\n-------------------------------------------------\nAbono                    |     1    |  $${abono.toFixed(2)}\n-------------------------------------------------\nCuotas Restantes: ${cuotasRestantes}\nUsuario: ${prestamo.usuario}\n-------------------------------------------------\nGracias por su pago.\n-------------------------------------------------\n`;
+            let win = window.open("", "", "width=600,height=400");
+            win.document.write(`<pre>${factura}</pre>`);
+            win.document.close();
+            win.print();
+        }
+
+        function cargarPrestamos() {
+            db.ref("prestamos").on("value", snapshot => {
+                let tbody = document.getElementById("listaPrestamos");
+                tbody.innerHTML = "";
+                snapshot.forEach(childSnapshot => {
+                    let data = childSnapshot.val();
+                    let row = `<tr>
+                        <td>${data.cliente}</td>
+                        <td>$${data.monto.toFixed(2)}</td>
+                        <td>${data.cuotasRestantes}</td>
+                        <td>
+                            <button onclick="abonar('${childSnapshot.key}', ${data.monto / 10})">Abonar</button>
+                        </td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            });
+        }
         cargarPrestamos();
     </script>
 </body>
