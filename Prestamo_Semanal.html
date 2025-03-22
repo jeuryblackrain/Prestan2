@@ -7,120 +7,156 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        .container { max-width: 600px; margin: auto; padding: 20px; }
-        input, select, button { margin: 5px; padding: 10px; width: 90%; }
-        .factura { display: none; text-align: left; border: 1px solid #000; padding: 10px; margin-top: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select {
+            width: 95%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background: #007bff;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+            padding: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Registro de Cliente</h2>
-        <input type="text" id="nombre" placeholder="Nombre Completo">
-        <input type="text" id="cedula" placeholder="Cédula" maxlength="13" oninput="formatearCedula(this)">
-        <input type="text" id="telefono" placeholder="Teléfono" maxlength="12" oninput="formatearTelefono(this)">
-        <input type="text" id="direccion" placeholder="Dirección">
-        <button onclick="registrarCliente()">Registrar Cliente</button>
-
-        <h2>Nuevo Préstamo</h2>
-        <select id="clientes"></select>
-        <input type="number" id="monto" placeholder="Monto del Préstamo">
-        <button onclick="otorgarPrestamo()">Otorgar Préstamo</button>
-
-        <h2>Realizar Abono</h2>
-        <select id="prestamos"></select>
-        <button onclick="abonar()">Abonar e Imprimir Factura</button>
-
-        <div class="factura" id="factura">
-            <pre id="facturaContenido"></pre>
-            <button onclick="imprimirFactura()">Imprimir</button>
-        </div>
+        <h2>Préstamos Semanales</h2>
+        <button onclick="mostrarRegistroCliente()">Registrar Cliente</button>
+        <button onclick="mostrarNuevoPrestamo()">Nuevo Préstamo</button>
+        
+        <h3>Lista de Clientes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                </tr>
+            </thead>
+            <tbody id="listaClientes"></tbody>
+        </table>
+        
+        <h3>Lista de Préstamos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Cuotas</th>
+                    <th>Opciones</th>
+                </tr>
+            </thead>
+            <tbody id="listaPrestamos"></tbody>
+        </table>
     </div>
 
     <script>
+        // 🔹 Configuración Firebase
                const firebaseConfig = {
-          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
-          authDomain: "prestan2-6059e.firebaseapp.com",
-          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
-          projectId: "prestan2-6059e",
-          storageBucket: "prestan2-6059e.firebasestorage.app",
-          messagingSenderId: "758979429000",
-          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
-    };
+                  apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
+                  authDomain: "prestan2-6059e.firebaseapp.com",
+                  databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
+                  projectId: "prestan2-6059e",
+                  storageBucket: "prestan2-6059e.firebasestorage.app",
+                  messagingSenderId: "758979429000",
+                  appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
+            };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        function formatearCedula(input) {
-            let value = input.value.replace(/\D/g, '');
-            if (value.length > 3) value = value.slice(0, 3) + '-' + value.slice(3);
-            if (value.length > 11) value = value.slice(0, 11) + '-' + value.slice(11);
-            input.value = value;
+
+        function mostrarRegistroCliente() {
+            let nombre = prompt("Nombre Completo:");
+            let cedula = prompt("Cédula (sin guiones):");
+            let telefono = prompt("Teléfono (sin guiones):");
+            let direccion = prompt("Dirección:");
+            
+            if (!nombre || !cedula || !telefono || !direccion) return alert("Todos los campos son obligatorios.");
+            if (cedula.length !== 11 || telefono.length !== 10) return alert("Formato incorrecto.");
+
+            let id = db.ref("clientes").push().key;
+            db.ref("clientes/" + id).set({ nombre, cedula, telefono, direccion });
+            alert("Cliente registrado correctamente.");
         }
-        
-        function formatearTelefono(input) {
-            let value = input.value.replace(/\D/g, '');
-            if (value.length > 3) value = value.slice(0, 3) + '-' + value.slice(3);
-            if (value.length > 7) value = value.slice(0, 7) + '-' + value.slice(7);
-            input.value = value;
+
+        function mostrarNuevoPrestamo() {
+            let clienteID = prompt("Ingrese el ID del Cliente:");
+            let monto = parseFloat(prompt("Monto del préstamo:"));
+            let usuario = "admin"; 
+
+            if (!clienteID || isNaN(monto) || monto <= 0) return alert("Datos inválidos.");
+
+            let cuotas = monto / 10;
+            let id = db.ref("prestamos").push().key;
+            db.ref("prestamos/" + id).set({ clienteID, monto, cuotas: 13, usuario, saldoPendiente: monto });
+            alert("Préstamo registrado correctamente.");
         }
-        
-        function registrarCliente() {
-            const cliente = {
-                nombre: document.getElementById("nombre").value,
-                cedula: document.getElementById("cedula").value,
-                telefono: document.getElementById("telefono").value,
-                direccion: document.getElementById("direccion").value
-            };
-            db.ref("clientes").push(cliente);
-        }
-        
-        function otorgarPrestamo() {
-            const clienteID = document.getElementById("clientes").value;
-            const monto = parseFloat(document.getElementById("monto").value);
-            const cuotas = monto / 10;
-            const prestamo = { clienteID, monto, cuotas, restantes: 13, usuario: "Admin", fecha: new Date().toLocaleDateString() };
-            db.ref("prestamos").push(prestamo);
-        }
-        
-        function abonar() {
-            const prestamoID = document.getElementById("prestamos").value;
-            db.ref("prestamos/" + prestamoID).once("value", snapshot => {
-                let prestamo = snapshot.val();
-                if (prestamo.restantes > 0) {
-                    prestamo.restantes -= 1;
-                    db.ref("prestamos/" + prestamoID).update(prestamo);
-                    generarFactura(prestamo);
-                }
+
+        function abonar(idPrestamo) {
+            let montoAbono = parseFloat(prompt("Monto a abonar:"));
+            let usuario = "admin"; 
+            let fecha = new Date().toLocaleString();
+
+            db.ref("prestamos/" + idPrestamo).once("value", snapshot => {
+                let data = snapshot.val();
+                let nuevoSaldo = data.saldoPendiente - montoAbono;
+                let nuevasCuotas = data.cuotas - 1;
+
+                db.ref("prestamos/" + idPrestamo).update({ saldoPendiente: nuevoSaldo, cuotas: nuevasCuotas });
+
+                imprimirFactura(data, montoAbono, usuario, fecha, nuevasCuotas);
+                alert("Abono realizado correctamente.");
             });
         }
-        
-        function generarFactura(prestamo) {
-            document.getElementById("facturaContenido").textContent = `
--------------------------------------------------
-                Prestan2
-   La Solucion a tus problemas
--------------------------------------------------
-Fecha: ${new Date().toLocaleDateString()}    Hora: ${new Date().toLocaleTimeString()}
-Factura N°: ${Math.floor(Math.random() * 1000000)}
 
-Cliente: ${prestamo.clienteID}
-Usuario: ${prestamo.usuario}
--------------------------------------------------
-Cuota N°: ${13 - prestamo.restantes}/13
-Monto Abonado: ${prestamo.cuotas}
-Cuotas Restantes: ${prestamo.restantes}
--------------------------------------------------
-Gracias por su pago.
--------------------------------------------------`;
-            document.getElementById("factura").style.display = "block";
-        }
-        
-        function imprimirFactura() {
-            let contenido = document.getElementById("facturaContenido").textContent;
-            let ventana = window.open('', '', 'width=400,height=600');
-            ventana.document.write(`<pre>${contenido}</pre>`);
-            ventana.document.close();
-            ventana.print();
+        function imprimirFactura(data, monto, usuario, fecha, cuotasRestantes) {
+            let factura = `\n-------------------------------------------------\n` +
+                          `            Prestan2\nLa Solución a tus Problemas\n-------------------------------------------------\n` +
+                          `Fecha: ${fecha}\n` +
+                          `Factura N°: ${Math.floor(Math.random() * 10000)}\n` +
+                          `Cliente: ${data.clienteID}\n` +
+                          `-------------------------------------------------\n` +
+                          `Descripción    | Cantidad | Precio Unitario | Total\n` +
+                          `-------------------------------------------------\n` +
+                          `Pago Cuota      |    1    |    ${monto}    | ${monto}\n` +
+                          `-------------------------------------------------\n` +
+                          `Cuotas restantes: ${cuotasRestantes}\n` +
+                          `Usuario: ${usuario}\n` +
+                          `-------------------------------------------------\n` +
+                          `Gracias por su Pago.\n-------------------------------------------------\n`;
+            console.log(factura);
+            alert(factura);
         }
     </script>
 </body>
