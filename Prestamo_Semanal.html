@@ -4,35 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Préstamos Semanales</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h2 class="text-center">Préstamos Semanales</h2>
-        <button class="btn btn-success" onclick="registrarCliente()">Registrar Cliente</button>
-        <button class="btn btn-primary" onclick="nuevoPrestamo()">Nuevo Préstamo</button>
-        <h4 class="mt-3">Lista de Clientes</h4>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cédula</th>
-                    <th>Teléfono</th>
-                    <th>Dirección</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="listaClientes"></tbody>
-        </table>
-        <h4 class="mt-3">Lista de Préstamos</h4>
-        <table class="table table-bordered">
-            <thead>
+
+    <div class="container">
+        <h2 class="mb-4">Préstamos Semanales</h2>
+
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalRegistrarCliente">Registrar Cliente</button>
+        <button class="btn btn-primary" onclick="mostrarModalClientes()">Nuevo Préstamo</button>
+
+        <table class="table table-striped mt-3">
+            <thead class="table-dark">
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
-                    <th>Cuotas Restantes</th>
+                    <th>Cuotas</th>
                     <th>Usuario</th>
                     <th>Acciones</th>
                 </tr>
@@ -40,8 +54,41 @@
             <tbody id="listaPrestamos"></tbody>
         </table>
     </div>
+
+    <!-- Modal: Registrar Cliente -->
+    <div class="modal fade" id="modalRegistrarCliente">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+                <h3>Registrar Cliente</h3>
+                <input type="text" id="nuevoCliente" class="form-control my-2" placeholder="Nombre del Cliente">
+                <button class="btn btn-success" onclick="registrarCliente()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Selección de Cliente -->
+    <div class="modal fade" id="modalClientes">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+                <h3>Seleccionar Cliente</h3>
+                <ul id="listaClientes" class="list-group"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Factura -->
+    <div class="modal fade" id="modalFactura">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+                <h3>Factura</h3>
+                <pre id="facturaDetalle" class="border p-3 bg-light"></pre>
+                <button class="btn btn-primary" onclick="imprimirFactura()">Imprimir</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-              const firebaseConfig = {
+               const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -52,54 +99,7 @@
     };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        function cargarClientes() {
-            db.ref("clientes").on("value", snapshot => {
-                const tbody = document.getElementById("listaClientes");
-                tbody.innerHTML = "";
-                snapshot.forEach(child => {
-                    const data = child.val();
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${data.nombre}</td>
-                            <td>${data.cedula}</td>
-                            <td>${data.telefono}</td>
-                            <td>${data.direccion}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarCliente('${child.key}')">Editar</button>
-                                <button class="btn btn-danger" onclick="eliminarCliente('${child.key}')">Eliminar</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            });
-        }
-        
-        function registrarCliente() {
-            const nombre = prompt("Nombre completo:");
-            const cedula = prompt("Cédula (000-0000000-0):");
-            const telefono = prompt("Teléfono (000-000-0000):");
-            const direccion = prompt("Dirección:");
-            if (nombre && cedula && telefono && direccion) {
-                db.ref("clientes").push({ nombre, cedula, telefono, direccion });
-            }
-        }
-        
-        function editarCliente(id) {
-            db.ref(`clientes/${id}`).once("value", snapshot => {
-                const data = snapshot.val();
-                const nombre = prompt("Nombre completo:", data.nombre);
-                const cedula = prompt("Cédula:", data.cedula);
-                const telefono = prompt("Teléfono:", data.telefono);
-                const direccion = prompt("Dirección:", data.direccion);
-                db.ref(`clientes/${id}`).update({ nombre, cedula, telefono, direccion });
-            });
-        }
-        
-        function eliminarCliente(id) {
-            db.ref(`clientes/${id}`).remove();
-        }
-        
+
         function cargarPrestamos() {
             db.ref("prestamos").on("value", snapshot => {
                 const tbody = document.getElementById("listaPrestamos");
@@ -109,12 +109,12 @@
                     tbody.innerHTML += `
                         <tr>
                             <td>${data.cliente}</td>
-                            <td>${data.monto}</td>
-                            <td>${data.cuotasRestantes}</td>
+                            <td>$${data.monto}</td>
+                            <td>${13 - data.cuotasRestantes}/13</td>
                             <td>${data.usuario}</td>
                             <td>
-                                <button class="btn btn-info" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
-                                <button class="btn btn-secondary" onclick="renovarPrestamo('${child.key}')">Renovar</button>
+                                <button class="btn btn-warning" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
+                                <button class="btn btn-info" onclick="renovarPrestamo('${child.key}', ${data.cuotasRestantes})">Renovar</button>
                                 <button class="btn btn-danger" onclick="saldarPrestamo('${child.key}')">Saldar</button>
                             </td>
                         </tr>
@@ -122,49 +122,95 @@
                 });
             });
         }
-        
-        function nuevoPrestamo() {
-            let clienteSeleccionado = prompt("Ingrese el nombre del cliente:");
-            const monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
-            const usuario = localStorage.getItem("usuario") || "Admin";
-            if (clienteSeleccionado && monto) {
-                db.ref("prestamos").push({
-                    cliente: clienteSeleccionado,
-                    monto,
-                    cuotasRestantes: 13,
-                    usuario
-                });
-            }
+
+        function registrarCliente() {
+            const nombre = document.getElementById("nuevoCliente").value;
+            if (nombre.trim() === "") return alert("Ingrese un nombre válido");
+            db.ref("clientes").push({ nombre });
+            document.getElementById("nuevoCliente").value = "";
+            new bootstrap.Modal(document.getElementById('modalRegistrarCliente')).hide();
         }
-        
+
+        function mostrarModalClientes() {
+            const lista = document.getElementById("listaClientes");
+            lista.innerHTML = "";
+            db.ref("clientes").once("value", snapshot => {
+                snapshot.forEach(child => {
+                    let cliente = child.val();
+                    let li = document.createElement("li");
+                    li.textContent = cliente.nombre;
+                    li.classList.add("list-group-item", "list-group-item-action");
+                    li.onclick = () => nuevoPrestamo(cliente.nombre);
+                    lista.appendChild(li);
+                });
+                new bootstrap.Modal(document.getElementById('modalClientes')).show();
+            });
+        }
+
+        function nuevoPrestamo(cliente) {
+            let monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
+            if (!monto) return;
+            let usuario = localStorage.getItem("usuario") || "Admin";
+            db.ref("prestamos").push({
+                cliente,
+                monto,
+                cuotasRestantes: 13,
+                usuario
+            });
+            new bootstrap.Modal(document.getElementById('modalClientes')).hide();
+        }
+
         function abonar(prestamoId, cuota) {
             db.ref(`prestamos/${prestamoId}`).once("value", snapshot => {
                 const data = snapshot.val();
                 if (data.cuotasRestantes > 0) {
                     const nuevasCuotas = data.cuotasRestantes - 1;
                     db.ref(`prestamos/${prestamoId}`).update({ cuotasRestantes: nuevasCuotas });
-                    alert(`Se abonó $${cuota}. Quedan ${nuevasCuotas} cuotas.`);
+                    mostrarFactura(data, cuota, nuevasCuotas);
                 }
             });
         }
-        
-        function renovarPrestamo(id) {
-            db.ref(`prestamos/${id}`).once("value", snapshot => {
-                const data = snapshot.val();
-                if (data.cuotasRestantes <= 3) {
-                    db.ref(`prestamos/${id}`).update({ cuotasRestantes: 13 });
-                    alert("Préstamo renovado exitosamente.");
-                }
-            });
+
+        function renovarPrestamo(prestamoId, cuotasRestantes) {
+            if (cuotasRestantes > 3) {
+                alert("El cliente debe haber pagado al menos 10 cuotas para renovar.");
+                return;
+            }
+            db.ref(`prestamos/${prestamoId}`).update({ cuotasRestantes: 13 });
+            alert("Préstamo renovado correctamente.");
         }
-        
-        function saldarPrestamo(id) {
-            db.ref(`prestamos/${id}`).remove();
-            alert("Préstamo saldado.");
+
+        function saldarPrestamo(prestamoId) {
+            if (confirm("¿Desea imprimir la factura de saldo?")) {
+                db.ref(`prestamos/${prestamoId}`).once("value", snapshot => {
+                    const data = snapshot.val();
+                    mostrarFactura(data, data.monto, 0);
+                });
+            }
+            db.ref(`prestamos/${prestamoId}`).remove();
         }
-        
-        cargarClientes();
+
+        function mostrarFactura(prestamo, cuota, cuotasRestantes) {
+            const factura = `
+                Prestan2 - La Solución a tus Problemas
+                -----------------------------------------
+                Cliente: ${prestamo.cliente}
+                Monto abonado: $${cuota.toFixed(2)}
+                Cuota actual: ${13 - cuotasRestantes}/13
+                Usuario: ${prestamo.usuario}
+                -----------------------------------------
+                ¡Gracias por su pago!
+            `;
+            document.getElementById("facturaDetalle").innerText = factura;
+            new bootstrap.Modal(document.getElementById('modalFactura')).show();
+        }
+
+        function imprimirFactura() {
+            window.print();
+        }
+
         cargarPrestamos();
     </script>
+
 </body>
 </html>
