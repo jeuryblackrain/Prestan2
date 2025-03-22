@@ -14,14 +14,14 @@
             padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             background: #fff;
             padding: 20px;
             margin: auto;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        input {
+        input, select {
             width: 95%;
             padding: 8px;
             margin: 5px 0;
@@ -40,12 +40,6 @@
         button:hover {
             background: #218838;
         }
-        .delete-btn {
-            background: #dc3545;
-        }
-        .delete-btn:hover {
-            background: #c82333;
-        }
         table {
             width: 100%;
             margin-top: 20px;
@@ -63,16 +57,20 @@
 </head>
 <body>
     <div class="container">
-        <h2>Préstamos Semanales</h2>
-        <button onclick="registrarCliente()">Registrar Cliente</button>
-        <button onclick="nuevoPrestamo()">Nuevo Préstamo</button>
+        <h2>Registro de Préstamos</h2>
+        <label>Seleccionar Cliente:</label>
+        <select id="cliente"></select>
+        <input type="number" id="monto" placeholder="Monto del Préstamo">
+        <button onclick="registrarPrestamo()">Registrar Préstamo</button>
+        
         <h3>Lista de Préstamos</h3>
         <table>
             <thead>
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
-                    <th>Fecha</th>
+                    <th>Cuotas (13)</th>
+                    <th>Usuario</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -81,7 +79,7 @@
     </div>
 
     <script>
-         const firebaseConfig = {
+            const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -90,67 +88,84 @@
           messagingSenderId: "758979429000",
           appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
     };
-
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("prestamos");
-
-        function registrarCliente() {
-            const nombre = prompt("Nombre completo:");
-            const cedula = prompt("Cédula (formato: 000-0000000-0):");
-            const telefono = prompt("Teléfono (formato: 000-000-0000):");
-            const direccion = prompt("Dirección:");
-            if (nombre && cedula && telefono && direccion) {
-                firebase.database().ref("clientes").push({ nombre, cedula, telefono, direccion });
-                alert("Cliente registrado con éxito!");
-            }
+        const clientesRef = firebase.database().ref("clientes");
+        const usuarioActual = localStorage.getItem("usuario");
+        
+        clientesRef.on("value", (snapshot) => {
+            const select = document.getElementById("cliente");
+            select.innerHTML = "";
+            snapshot.forEach((child) => {
+                const option = document.createElement("option");
+                option.value = child.key;
+                option.textContent = child.val().nombre;
+                select.appendChild(option);
+            });
+        });
+        
+        function registrarPrestamo() {
+            const clienteId = document.getElementById("cliente").value;
+            const monto = document.getElementById("monto").value.trim();
+            if (!clienteId || !monto) return alert("Todos los campos son obligatorios.");
+            
+            const cuotas = (monto / 13).toFixed(2);
+            const nuevoPrestamo = dbRef.push();
+            nuevoPrestamo.set({
+                clienteId, monto, cuotas, usuario: usuarioActual,
+                fechaInicio: new Date().toLocaleDateString(),
+            });
         }
-
-        function nuevoPrestamo() {
-            const cliente = prompt("Nombre del Cliente:");
-            const monto = parseFloat(prompt("Monto del préstamo:"));
-            if (cliente && monto) {
-                const fecha = new Date().toISOString().split('T')[0];
-                const cuotas = monto / 13;
-                dbRef.push({ cliente, monto, fecha, cuotas });
-                alert("Préstamo registrado!");
-            }
-        }
-
+        
         dbRef.on("value", (snapshot) => {
             const tabla = document.getElementById("tablaPrestamos");
             tabla.innerHTML = "";
-            snapshot.forEach((childSnapshot) => {
-                const data = childSnapshot.val();
+            snapshot.forEach((child) => {
+                const data = child.val();
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${data.cliente}</td>
+                    <td>${data.clienteId}</td>
                     <td>${data.monto}</td>
-                    <td>${data.fecha}</td>
+                    <td>${data.cuotas}</td>
+                    <td>${data.usuario}</td>
                     <td>
-                        <button onclick="abonar('${childSnapshot.key}', ${data.monto / 10})">Abonar</button>
-                        <button onclick="saldarDeuda('${childSnapshot.key}')" class="delete-btn">Saldar</button>
+                        <button onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
+                        <button onclick="saldar('${child.key}')">Saldar</button>
                     </td>
                 `;
                 tabla.appendChild(row);
             });
         });
-
-        function abonar(id, montoAbono) {
-            const confirmar = confirm(`¿Desea abonar ${montoAbono}?`);
-            if (confirmar) {
-                dbRef.child(id).once("value", (snapshot) => {
-                    const data = snapshot.val();
-                    const nuevoMonto = data.monto - montoAbono;
-                    dbRef.child(id).update({ monto: nuevoMonto });
-                    alert("Abono realizado!");
-                });
-            }
+        
+        function abonar(prestamoId, montoAbono) {
+            const abono = confirm(`¿Desea abonar ${montoAbono}?`);
+            if (!abono) return;
+            
+            dbRef.child(prestamoId).once("value", (snapshot) => {
+                const data = snapshot.val();
+                const nuevoMonto = data.monto - montoAbono;
+                if (nuevoMonto <= 0) dbRef.child(prestamoId).remove();
+                else dbRef.child(prestamoId).update({ monto: nuevoMonto });
+                imprimirFactura(data, montoAbono);
+            });
         }
-
-        function saldarDeuda(id) {
-            if (confirm("¿Está seguro de que desea saldar la deuda?")) {
-                dbRef.child(id).remove();
-                alert("Deuda saldada!");
+        
+        function imprimirFactura(data, montoAbono) {
+            const factura = `
+                <h2>Factura</h2>
+                <p>Cliente: ${data.clienteId}</p>
+                <p>Monto Abonado: ${montoAbono}</p>
+                <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                <p>Usuario: ${data.usuario}</p>
+            `;
+            const ventana = window.open("", "Factura", "width=400,height=400");
+            ventana.document.write(factura);
+            ventana.print();
+        }
+        
+        function saldar(prestamoId) {
+            if (confirm("¿Seguro que desea saldar el préstamo?")) {
+                dbRef.child(prestamoId).remove();
             }
         }
     </script>
