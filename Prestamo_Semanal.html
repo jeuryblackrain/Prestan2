@@ -111,6 +111,22 @@
             input.value = cedula;
         }
 
+        // 🔹 Función para formatear el número de teléfono automáticamente
+        function formatearTelefono(input) {
+            let telefono = input.value.replace(/\D/g, ""); // Solo números
+            if (telefono.length > 10) telefono = telefono.substring(0, 10);
+
+            // Aplicar formato XXX-XXX-XXXX
+            if (telefono.length > 3 && telefono.length <= 6) {
+                telefono = telefono.replace(/(\d{3})(\d{1,3})/, "$1-$2");
+            } else if (telefono.length > 6) {
+                telefono = telefono.replace(/(\d{3})(\d{3})(\d{1,4})/, "$1-$2-$3");
+            }
+
+            input.value = telefono;
+        }
+
+
         // 🔹 Registrar un cliente
         function registrarCliente() {
             const nombre = document.getElementById("nombreCliente").value.trim();
