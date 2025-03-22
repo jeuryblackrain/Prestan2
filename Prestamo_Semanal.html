@@ -3,284 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Préstamos Semanales</title>
+    <title>Préstamos Semanal</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            background: #fff;
-            padding: 20px;
-            margin: auto;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        input, select {
-            width: 90%;
-            padding: 8px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            background: #007bff;
-            border-radius: 5px;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        th {
-            background: #007bff;
-            color: white;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { width: 80%; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        input, select, button { margin: 10px; padding: 10px; width: 80%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Registro de Cliente</h2>
-        <input type="text" id="nombreCliente" placeholder="Nombre Completo">
-        <input type="text" id="cedulaCliente" placeholder="Cédula (Ej: 001-1234567-8)" oninput="formatearCedula(this)">
-        <input type="tel" id="telefonoCliente" placeholder="Teléfono">
-        <input type="text" id="direccionCliente" placeholder="Dirección">
-        <button onclick="registrarCliente()">Registrar Cliente</button>
-        
-        <h2>Nuevo Préstamo</h2>
-        <select id="clienteSelect"></select>
-        <input type="number" id="montoPrestamo" placeholder="Monto del préstamo">
-        <button onclick="registrarPrestamo()">Otorgar Préstamo</button>
-
-        <h2>Lista de Préstamos</h2>
-        <table>
+        <h2>Gestión de Préstamos</h2>
+        <button onclick="mostrarFormularioCliente()">Registrar Cliente</button>
+        <button onclick="mostrarFormularioPrestamo()">Nuevo Préstamo</button>
+        <table id="tablaPrestamos">
             <thead>
-                <tr>
-                    <th>Cliente</th>
-                    <th>Monto</th>
-                    <th>Pagos</th>
-                    <th>Acciones</th>
-                </tr>
+                <tr><th>Cliente</th><th>Monto</th><th>Saldo</th><th>Fecha</th><th>Acciones</th></tr>
             </thead>
-            <tbody id="tablaPrestamos"></tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <script>
-        // 🔹 Configuración Firebase (agrega tus credenciales)
-              const firebaseConfig = {
-          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
-          authDomain: "prestan2-6059e.firebaseapp.com",
-          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
-          projectId: "prestan2-6059e",
-          storageBucket: "prestan2-6059e.firebasestorage.app",
-          messagingSenderId: "758979429000",
-          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
-    };
+             const firebaseConfig = {
+                  apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
+                  authDomain: "prestan2-6059e.firebaseapp.com",
+                  databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
+                  projectId: "prestan2-6059e",
+                  storageBucket: "prestan2-6059e.firebasestorage.app",
+                  messagingSenderId: "758979429000",
+                  appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
+            };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        // 🔹 Función para formatear la cédula automáticamente
-        function formatearCedula(input) {
-            let cedula = input.value.replace(/\D/g, ""); // Solo números
-            if (cedula.length > 11) cedula = cedula.substring(0, 11);
-
-            // Aplicar formato XXX-XXXXXXX-X
-            if (cedula.length > 3 && cedula.length <= 10) {
-                cedula = cedula.replace(/(\d{3})(\d{1,7})/, "$1-$2");
-            } else if (cedula.length > 10) {
-                cedula = cedula.replace(/(\d{3})(\d{7})(\d{1})/, "$1-$2-$3");
-            }
-
-            input.value = cedula;
+        
+        function mostrarFormularioCliente() {
+            let nombre = prompt("Nombre Completo");
+            let cedula = prompt("Cédula (solo números, se formateará)");
+            let telefono = prompt("Teléfono (solo números, se formateará)");
+            let direccion = prompt("Dirección");
+            
+            cedula = cedula.replace(/\D/g, "").replace(/(\d{3})(\d{7})(\d{1})/, "$1-$2-$3");
+            telefono = telefono.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+            
+            db.ref("clientes").push({ nombre, cedula, telefono, direccion });
+            alert("Cliente registrado con éxito");
         }
 
-        // 🔹 Función para formatear el número de teléfono automáticamente
-        function formatearTelefono(input) {
-            let telefono = input.value.replace(/\D/g, ""); // Solo números
-            if (telefono.length > 10) telefono = telefono.substring(0, 10);
-
-            // Aplicar formato XXX-XXX-XXXX
-            if (telefono.length > 3 && telefono.length <= 6) {
-                telefono = telefono.replace(/(\d{3})(\d{1,3})/, "$1-$2");
-            } else if (telefono.length > 6) {
-                telefono = telefono.replace(/(\d{3})(\d{3})(\d{1,4})/, "$1-$2-$3");
-            }
-
-            input.value = telefono;
-        }
-
-
-        // 🔹 Registrar un cliente
-        function registrarCliente() {
-            const nombre = document.getElementById("nombreCliente").value.trim();
-            const cedula = document.getElementById("cedulaCliente").value.trim();
-            const telefono = document.getElementById("telefonoCliente").value.trim();
-            const direccion = document.getElementById("direccionCliente").value.trim();
-
-            if (!nombre || !cedula || !telefono || !direccion) {
-                alert("Por favor, complete todos los campos.");
-                return;
-            }
-
-            const clienteRef = db.ref("clientes").push();
-            clienteRef.set({ nombre, cedula, telefono, direccion }, () => {
-                alert("Cliente registrado con éxito.");
-                cargarClientes();
+        function mostrarFormularioPrestamo() {
+            db.ref("clientes").once("value", snapshot => {
+                let clientes = snapshot.val();
+                let opciones = Object.entries(clientes).map(([id, c]) => `${id}: ${c.nombre}`).join("\n");
+                let idCliente = prompt(`Seleccione cliente (ID):\n${opciones}`);
+                let monto = parseFloat(prompt("Monto del préstamo"));
+                let usuario = localStorage.getItem("usuario");
+                let fecha = new Date().toLocaleDateString();
+                
+                db.ref("prestamos").push({ idCliente, nombreCliente: clientes[idCliente].nombre, monto, saldo: monto, usuario, fecha });
+                alert("Préstamo registrado");
             });
         }
-
-        // 🔹 Cargar clientes en el select de préstamos
-        function cargarClientes() {
-            const selectClientes = document.getElementById("clienteSelect");
-            selectClientes.innerHTML = "<option value=''>Seleccione un cliente</option>";
-
-            db.ref("clientes").once("value", (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const cliente = childSnapshot.val();
-                    const option = document.createElement("option");
-                    option.value = childSnapshot.key;
-                    option.textContent = `${cliente.nombre} - ${cliente.cedula}`;
-                    selectClientes.appendChild(option);
-                });
-            });
-        }
-
-        // 🔹 Registrar un préstamo
-        function registrarPrestamo() {
-            const clienteId = document.getElementById("clienteSelect").value;
-            const monto = parseFloat(document.getElementById("montoPrestamo").value);
-
-            if (!clienteId || isNaN(monto) || monto <= 0) {
-                alert("Seleccione un cliente y un monto válido.");
-                return;
-            }
-
-            db.ref(`clientes/${clienteId}`).once("value", (snapshot) => {
-                const cliente = snapshot.val();
-                const fechaInicio = new Date().toISOString().split("T")[0];
-                const cuota = (monto / 13).toFixed(2);
-
-                const prestamoRef = db.ref("prestamos").push();
-                prestamoRef.set({
-                    cliente: cliente.nombre,
-                    cedula: cliente.cedula,
-                    monto,
-                    cuota,
-                    fechaInicio,
-                    pagosRealizados: 0,
-                    saldoPendiente: monto,
-                    usuario: localStorage.getItem("usuario")
-                }, () => {
-                    alert("Préstamo registrado con éxito.");
-                    cargarPrestamos();
-                });
-            });
-        }
-
-        // 🔹 Cargar préstamos en la tabla
+        
         function cargarPrestamos() {
-            const tabla = document.getElementById("tablaPrestamos");
-            tabla.innerHTML = "";
-
-            db.ref("prestamos").once("value", (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const prestamo = childSnapshot.val();
-                    const row = `<tr>
-                        <td>${prestamo.cliente}</td>
-                        <td>$${prestamo.monto}</td>
-                        <td>${prestamo.pagosRealizados}/13</td>
-                        <td>
-                            <button onclick="realizarAbono('{idDelPrestamo}')">Abonar</button>
-                            <button onclick="saldar('${childSnapshot.key}')">Saldar</button>
-                        </td>
+            db.ref("prestamos").on("value", snapshot => {
+                let tbody = document.querySelector("#tablaPrestamos tbody");
+                tbody.innerHTML = "";
+                snapshot.forEach(child => {
+                    let p = child.val();
+                    tbody.innerHTML += `<tr>
+                        <td>${p.nombreCliente}</td>
+                        <td>${p.monto} RD$</td>
+                        <td>${p.saldo} RD$</td>
+                        <td>${p.fecha}</td>
+                        <td><button onclick="realizarAbono('${child.key}')">Abonar</button></td>
                     </tr>`;
-                    tabla.innerHTML += row;
                 });
             });
         }
-
-        // 🔹 Cargar datos al iniciar
-        document.addEventListener("DOMContentLoaded", () => {
-            cargarClientes();
-            cargarPrestamos();
-        });
-
-
-        // 🔹 Función para realizar un abono
+        
         function realizarAbono(idPrestamo) {
-            const prestamoRef = firebase.database().ref("prestamos/" + idPrestamo);
-
-            prestamoRef.once("value", (snapshot) => {
+            db.ref("prestamos/" + idPrestamo).once("value", snapshot => {
                 if (snapshot.exists()) {
-                    const prestamo = snapshot.val();
-                    const pago = prestamo.monto / 10; // Pago = Monto total / 10
-                    const nuevoSaldo = prestamo.saldo - pago;
-
-                    // Actualizar la base de datos
-                    prestamoRef.update({
-                        saldo: nuevoSaldo
-                    });
-
-                    // Llamar a la función para imprimir la factura
-                    imprimirFactura(prestamo, pago);
-
-                    alert(`Pago realizado con éxito. Nuevo saldo: ${nuevoSaldo}`);
+                    let p = snapshot.val();
+                    let abono = p.monto / 10;
+                    let nuevoSaldo = p.saldo - abono;
+                    db.ref("prestamos/" + idPrestamo).update({ saldo: nuevoSaldo });
+                    imprimirFactura(p, abono);
+                    alert("Pago realizado. Nuevo saldo: " + nuevoSaldo);
                 }
             });
         }
-
-        // 🔹 Función para imprimir la factura
-            function imprimirFactura(prestamo, pago) {
-                const fechaActual = new Date().toLocaleDateString();
-                const factura = `
-                    <html>
-                    <head>
-                        <title>Factura de Pago</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 20px; }
-                            h2 { text-align: center; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f4f4f4; }
-                        </style>
-                    </head>
-                    <body>
-                        <h2>Factura de Pago</h2>
-                        <p><strong>Fecha:</strong> ${fechaActual}</p>
-                        <p><strong>Cliente:</strong> ${prestamo.nombreCliente}</p>
-                        <p><strong>Monto Total:</strong> ${prestamo.monto} RD$</p>
-                        <p><strong>Pago realizado:</strong> ${pago} RD$</p>
-                        <p><strong>Saldo Restante:</strong> ${prestamo.saldo - pago} RD$</p>
-                        <p><strong>Registrado por:</strong> ${prestamo.usuario}</p>
-
-                        <button onclick="window.print()">Imprimir</button>
-                    </body>
-                    </html>
-                `;
-
-                const ventana = window.open("", "_blank");
-                ventana.document.write(factura);
-                ventana.document.close();
-            }
-
-
+        
+        function imprimirFactura(prestamo, pago) {
+            let fecha = new Date().toLocaleDateString();
+            let factura = `<html><head><title>Factura</title></head><body>
+                <h2>Factura de Pago</h2>
+                <p>Fecha: ${fecha}</p>
+                <p>Cliente: ${prestamo.nombreCliente}</p>
+                <p>Monto Total: ${prestamo.monto} RD$</p>
+                <p>Pago realizado: ${pago} RD$</p>
+                <p>Saldo Restante: ${prestamo.saldo - pago} RD$</p>
+                <button onclick="window.print()">Imprimir</button>
+            </body></html>`;
+            let ventana = window.open("", "_blank");
+            ventana.document.write(factura);
+            ventana.document.close();
+        }
+        
+        cargarPrestamos();
     </script>
 </body>
 </html>
