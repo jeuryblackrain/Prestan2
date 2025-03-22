@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 600px;
             background: #fff;
             padding: 20px;
             margin: auto;
@@ -66,7 +66,6 @@
         <h2>Préstamos Semanales</h2>
         <button onclick="registrarCliente()">Registrar Cliente</button>
         <button onclick="nuevoPrestamo()">Nuevo Préstamo</button>
-
         <h3>Lista de Préstamos</h3>
         <table>
             <thead>
@@ -82,78 +81,76 @@
     </div>
 
     <script>
-              const firebaseConfig = {
-                  apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
-                  authDomain: "prestan2-6059e.firebaseapp.com",
-                  databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
-                  projectId: "prestan2-6059e",
-                  storageBucket: "prestan2-6059e.firebasestorage.app",
-                  messagingSenderId: "758979429000",
-                  appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
-            };
+         const firebaseConfig = {
+          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
+          authDomain: "prestan2-6059e.firebaseapp.com",
+          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
+          projectId: "prestan2-6059e",
+          storageBucket: "prestan2-6059e.firebasestorage.app",
+          messagingSenderId: "758979429000",
+          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
+    };
+
         firebase.initializeApp(firebaseConfig);
         const dbRef = firebase.database().ref("prestamos");
 
         function registrarCliente() {
-            let nombre = prompt("Nombre completo:").trim();
-            let cedula = prompt("Cédula:").replace(/[^0-9]/g, "").substring(0, 11);
-            let telefono = prompt("Teléfono:").replace(/[^0-9]/g, "").substring(0, 10);
-            let direccion = prompt("Dirección:").trim();
-            
-            if (!nombre || cedula.length !== 11 || telefono.length !== 10 || !direccion) {
-                alert("Datos inválidos. Verifica e intenta de nuevo.");
-                return;
+            const nombre = prompt("Nombre completo:");
+            const cedula = prompt("Cédula (formato: 000-0000000-0):");
+            const telefono = prompt("Teléfono (formato: 000-000-0000):");
+            const direccion = prompt("Dirección:");
+            if (nombre && cedula && telefono && direccion) {
+                firebase.database().ref("clientes").push({ nombre, cedula, telefono, direccion });
+                alert("Cliente registrado con éxito!");
             }
-
-            firebase.database().ref("clientes").push({ nombre, cedula, telefono, direccion });
-            alert("Cliente registrado exitosamente");
         }
 
         function nuevoPrestamo() {
-            let cliente = prompt("Nombre del Cliente:");
-            let monto = parseFloat(prompt("Monto del préstamo:")).toFixed(2);
-            let fecha = new Date().toLocaleDateString();
-            let pagos = Array.from({ length: 13 }, (_, i) => ({ pago: (monto / 13).toFixed(2), pagado: false }));
-            
-            dbRef.push({ cliente, monto, fecha, pagos });
-            alert("Préstamo registrado correctamente");
+            const cliente = prompt("Nombre del Cliente:");
+            const monto = parseFloat(prompt("Monto del préstamo:"));
+            if (cliente && monto) {
+                const fecha = new Date().toISOString().split('T')[0];
+                const cuotas = monto / 13;
+                dbRef.push({ cliente, monto, fecha, cuotas });
+                alert("Préstamo registrado!");
+            }
         }
 
         dbRef.on("value", (snapshot) => {
             const tabla = document.getElementById("tablaPrestamos");
             tabla.innerHTML = "";
-
             snapshot.forEach((childSnapshot) => {
-                const key = childSnapshot.key;
                 const data = childSnapshot.val();
-
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${data.cliente}</td>
                     <td>${data.monto}</td>
                     <td>${data.fecha}</td>
                     <td>
-                        <button onclick="abonar('${key}', ${data.monto})">Abonar</button>
-                        <button class="delete-btn" onclick="saldar('${key}')">Saldar</button>
+                        <button onclick="abonar('${childSnapshot.key}', ${data.monto / 10})">Abonar</button>
+                        <button onclick="saldarDeuda('${childSnapshot.key}')" class="delete-btn">Saldar</button>
                     </td>
                 `;
                 tabla.appendChild(row);
             });
         });
 
-        function abonar(id, monto) {
-            let abono = (monto / 10).toFixed(2);
-            if (confirm(`¿Desea abonar ${abono}?`)) {
-                let factura = `Factura\nCliente: ${id}\nMonto: ${monto}\nAbono: ${abono}\nFecha: ${new Date().toLocaleDateString()}`;
-                alert(factura);
-                print();
+        function abonar(id, montoAbono) {
+            const confirmar = confirm(`¿Desea abonar ${montoAbono}?`);
+            if (confirmar) {
+                dbRef.child(id).once("value", (snapshot) => {
+                    const data = snapshot.val();
+                    const nuevoMonto = data.monto - montoAbono;
+                    dbRef.child(id).update({ monto: nuevoMonto });
+                    alert("Abono realizado!");
+                });
             }
         }
 
-        function saldar(id) {
-            if (confirm("¿Desea saldar el préstamo?")) {
+        function saldarDeuda(id) {
+            if (confirm("¿Está seguro de que desea saldar la deuda?")) {
                 dbRef.child(id).remove();
-                alert("Préstamo saldado.");
+                alert("Deuda saldada!");
             }
         }
     </script>
