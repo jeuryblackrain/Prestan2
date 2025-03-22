@@ -47,17 +47,39 @@
         .btn-abonar { background-color: #ffc107; color: black; }
         .btn-renovar { background-color: #6f42c1; }
         .btn-saldar { background-color: #dc3545; }
+        
+        /* Estilos para la ventana emergente (modal) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 60%;
+            margin: 15% auto;
+            text-align: center;
+        }
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
         .factura {
             display: none;
-            width: 300px;
             background: white;
             padding: 20px;
             border: 1px solid #000;
-        }
-        @media print {
-            .factura {
-                display: block;
-            }
+            text-align: left;
         }
     </style>
 </head>
@@ -65,7 +87,7 @@
     <div class="container">
         <h2>Préstamos Semanales</h2>
         <button class="btn-registrar" onclick="registrarCliente()">Registrar Cliente</button>
-        <button class="btn-prestamo" onclick="nuevoPrestamo()">Nuevo Préstamo</button>
+        <button class="btn-prestamo" onclick="mostrarModalClientes()">Nuevo Préstamo</button>
         <table>
             <thead>
                 <tr>
@@ -80,10 +102,23 @@
         </table>
     </div>
 
-    <div class="factura" id="factura">
-        <h3>Prestan2</h3>
-        <p>La Solución a tus problemas</p>
-        <p id="facturaDetalle"></p>
+    <!-- Modal de selección de cliente -->
+    <div id="modalClientes" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="cerrarModalClientes()">&times;</span>
+            <h3>Seleccionar Cliente</h3>
+            <ul id="listaClientes"></ul>
+        </div>
+    </div>
+
+    <!-- Modal de factura -->
+    <div id="modalFactura" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="cerrarModalFactura()">&times;</span>
+            <h3>Factura</h3>
+            <pre id="facturaDetalle" class="factura"></pre>
+            <button onclick="imprimirFactura()">Imprimir</button>
+        </div>
     </div>
 
     <script>
@@ -122,6 +157,47 @@
             });
         }
 
+        function mostrarModalClientes() {
+            const lista = document.getElementById("listaClientes");
+            lista.innerHTML = "";
+            db.ref("clientes").once("value", snapshot => {
+                snapshot.forEach(child => {
+                    let cliente = child.val();
+                    let li = document.createElement("li");
+                    li.textContent = cliente.nombre;
+                    li.onclick = () => nuevoPrestamo(cliente.nombre);
+                    lista.appendChild(li);
+                });
+                document.getElementById("modalClientes").style.display = "block";
+            });
+        }
+
+        function cerrarModalClientes() {
+            document.getElementById("modalClientes").style.display = "none";
+        }
+
+        function cerrarModalFactura() {
+            document.getElementById("modalFactura").style.display = "none";
+        }
+
+        function imprimirFactura() {
+            window.print();
+        }
+
+        function nuevoPrestamo(cliente) {
+            cerrarModalClientes();
+            let monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
+            let usuario = localStorage.getItem("usuario") || "Admin";
+            if (monto) {
+                db.ref("prestamos").push({
+                    cliente,
+                    monto,
+                    cuotasRestantes: 13,
+                    usuario
+                });
+            }
+        }
+
         function abonar(prestamoId, cuota) {
             const fecha = new Date().toLocaleString();
             db.ref(`prestamos/${prestamoId}`).once("value", snapshot => {
@@ -129,86 +205,26 @@
                 if (data.cuotasRestantes > 0) {
                     const nuevasCuotas = data.cuotasRestantes - 1;
                     db.ref(`prestamos/${prestamoId}`).update({ cuotasRestantes: nuevasCuotas });
-                    imprimirFactura(data, cuota, nuevasCuotas, fecha);
+                    mostrarFactura(data, cuota, nuevasCuotas, fecha);
                 }
             });
         }
 
-        function imprimirFactura(prestamo, cuota, cuotasRestantes, fecha) {
+        function mostrarFactura(prestamo, cuota, cuotasRestantes, fecha) {
             const factura = `
-                -------------------------------------------------
-                                   Prestan2
-                           La Solución a tus problemas
-                -------------------------------------------------
+                            Prestan2 -
+                 La Solución a tus problemas
+                -----------------------------------------
                 Fecha: ${fecha}
                 Cliente: ${prestamo.cliente}
-                -------------------------------------------------
                 Monto abonado: $${cuota.toFixed(2)}
                 Número de cuota: ${13 - cuotasRestantes}/13
                 Usuario: ${prestamo.usuario}
-                -------------------------------------------------
-                           Gracias por su pago.
-                -------------------------------------------------
+                -----------------------------------------
+                         Gracias por su pago.
             `;
             document.getElementById("facturaDetalle").innerText = factura;
-            document.getElementById("factura").style.display = "block";
-            window.print();
-        }
-
-        function nuevoPrestamo() {
-            db.ref("clientes").once("value", snapshot => {
-                let clientes = [];
-                snapshot.forEach(child => {
-                    clientes.push(child.val().nombre);
-                });
-
-                let cliente = prompt("Ingrese el nombre del cliente:\n" + clientes.join("\n"));
-                if (!clientes.includes(cliente)) {
-                    alert("Cliente no encontrado.");
-                    return;
-                }
-
-                let monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
-                let usuario = localStorage.getItem("usuario") || "Admin";
-                if (monto) {
-                    db.ref("prestamos").push({
-                        cliente,
-                        monto,
-                        cuotasRestantes: 13,
-                        usuario
-                    });
-                }
-            });
-        }
-
-        function registrarCliente() {
-            const nombre = prompt("Nombre completo:");
-            const cedula = prompt("Cédula (000-0000000-0):");
-            const telefono = prompt("Teléfono (000-000-0000):");
-            const direccion = prompt("Dirección:");
-            if (nombre && cedula && telefono && direccion) {
-                db.ref("clientes").push({ nombre, cedula, telefono, direccion });
-            }
-        }
-
-        function renovarPrestamo(id, cuotasRestantes) {
-            if (cuotasRestantes > 3) {
-                alert("Solo se puede renovar si quedan 3 cuotas o menos.");
-                return;
-            }
-            db.ref(`prestamos/${id}`).update({ cuotasRestantes: 13 });
-            alert("Préstamo renovado exitosamente.");
-        }
-
-        function saldarPrestamo(id) {
-            db.ref(`prestamos/${id}`).once("value", snapshot => {
-                const data = snapshot.val();
-                if (confirm("¿Desea imprimir la factura de saldo?")) {
-                    imprimirFactura(data, data.monto, 0, new Date().toLocaleString());
-                }
-                db.ref(`prestamos/${id}`).remove();
-                alert("Préstamo saldado y eliminado.");
-            });
+            document.getElementById("modalFactura").style.display = "block";
         }
 
         cargarPrestamos();
