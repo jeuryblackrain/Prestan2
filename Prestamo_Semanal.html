@@ -3,107 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Préstamos Semanal</title>
+    <title>Préstamos Semanales</title>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-        input, button { margin: 5px; padding: 10px; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { padding: 10px; border: 1px solid #ddd; }
-        th { background: #007bff; color: white; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            margin: auto;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select {
+            width: 90%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background: #007bff;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Préstamos Semanal</h2>
+        <h2>Registro de Cliente</h2>
+        <input type="text" id="nombreCliente" placeholder="Nombre Completo">
+        <input type="text" id="cedulaCliente" placeholder="Cédula (Ej: 001-1234567-8)" oninput="formatearCedula(this)">
+        <input type="tel" id="telefonoCliente" placeholder="Teléfono">
+        <input type="text" id="direccionCliente" placeholder="Dirección">
         <button onclick="registrarCliente()">Registrar Cliente</button>
-        <button onclick="nuevoPrestamo()">Nuevo Préstamo</button>
         
-        <h3>Lista de Préstamos</h3>
+        <h2>Nuevo Préstamo</h2>
+        <select id="clienteSelect"></select>
+        <input type="number" id="montoPrestamo" placeholder="Monto del préstamo">
+        <button onclick="registrarPrestamo()">Otorgar Préstamo</button>
+
+        <h2>Lista de Préstamos</h2>
         <table>
             <thead>
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
-                    <th>Pagos Restantes</th>
-                    <th>Fecha Préstamo</th>
+                    <th>Pagos</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="listaPrestamos"></tbody>
+            <tbody id="tablaPrestamos"></tbody>
         </table>
     </div>
 
     <script>
-        const firebaseConfig = { /* Agrega tus credenciales */ };
+        // 🔹 Configuración Firebase (agrega tus credenciales)
+              const firebaseConfig = {
+          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
+          authDomain: "prestan2-6059e.firebaseapp.com",
+          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
+          projectId: "prestan2-6059e",
+          storageBucket: "prestan2-6059e.firebasestorage.app",
+          messagingSenderId: "758979429000",
+          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
+    };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database().ref("prestamos");
+        const db = firebase.database();
 
+        // 🔹 Función para formatear la cédula automáticamente
+        function formatearCedula(input) {
+            let cedula = input.value.replace(/\D/g, ""); // Solo números
+            if (cedula.length > 11) cedula = cedula.substring(0, 11);
+
+            // Aplicar formato XXX-XXXXXXX-X
+            if (cedula.length > 3 && cedula.length <= 10) {
+                cedula = cedula.replace(/(\d{3})(\d{1,7})/, "$1-$2");
+            } else if (cedula.length > 10) {
+                cedula = cedula.replace(/(\d{3})(\d{7})(\d{1})/, "$1-$2-$3");
+            }
+
+            input.value = cedula;
+        }
+
+        // 🔹 Registrar un cliente
         function registrarCliente() {
-            const nombre = prompt("Nombre completo:");
-            const cedula = prompt("Cédula:");
-            const telefono = prompt("Teléfono:");
-            const direccion = prompt("Dirección:");
-            if (nombre && cedula && telefono && direccion) {
-                firebase.database().ref("clientes").push({ nombre, cedula, telefono, direccion });
-                alert("Cliente registrado correctamente.");
+            const nombre = document.getElementById("nombreCliente").value.trim();
+            const cedula = document.getElementById("cedulaCliente").value.trim();
+            const telefono = document.getElementById("telefonoCliente").value.trim();
+            const direccion = document.getElementById("direccionCliente").value.trim();
+
+            if (!nombre || !cedula || !telefono || !direccion) {
+                alert("Por favor, complete todos los campos.");
+                return;
             }
+
+            const clienteRef = db.ref("clientes").push();
+            clienteRef.set({ nombre, cedula, telefono, direccion }, () => {
+                alert("Cliente registrado con éxito.");
+                cargarClientes();
+            });
         }
 
-        function nuevoPrestamo() {
-            const cliente = prompt("Nombre del cliente:");
-            const usuario = localStorage.getItem("usuario");
-            const monto = parseFloat(prompt("Monto del préstamo:"));
-            if (cliente && usuario && monto) {
-                const fechaPrestamo = new Date().toISOString().split('T')[0];
-                const pagos = 13;
-                db.push({ cliente, usuario, monto, pagosRestantes: pagos, fechaPrestamo });
-                alert("Préstamo registrado correctamente.");
-            }
+        // 🔹 Cargar clientes en el select de préstamos
+        function cargarClientes() {
+            const selectClientes = document.getElementById("clienteSelect");
+            selectClientes.innerHTML = "<option value=''>Seleccione un cliente</option>";
+
+            db.ref("clientes").once("value", (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const cliente = childSnapshot.val();
+                    const option = document.createElement("option");
+                    option.value = childSnapshot.key;
+                    option.textContent = `${cliente.nombre} - ${cliente.cedula}`;
+                    selectClientes.appendChild(option);
+                });
+            });
         }
 
-        db.on("value", snapshot => {
-            const lista = document.getElementById("listaPrestamos");
-            lista.innerHTML = "";
-            snapshot.forEach(child => {
-                const data = child.val();
-                lista.innerHTML += `
-                    <tr>
-                        <td>${data.cliente}</td>
-                        <td>$${data.monto}</td>
-                        <td>${data.pagosRestantes}</td>
-                        <td>${data.fechaPrestamo}</td>
+        // 🔹 Registrar un préstamo
+        function registrarPrestamo() {
+            const clienteId = document.getElementById("clienteSelect").value;
+            const monto = parseFloat(document.getElementById("montoPrestamo").value);
+
+            if (!clienteId || isNaN(monto) || monto <= 0) {
+                alert("Seleccione un cliente y un monto válido.");
+                return;
+            }
+
+            db.ref(`clientes/${clienteId}`).once("value", (snapshot) => {
+                const cliente = snapshot.val();
+                const fechaInicio = new Date().toISOString().split("T")[0];
+                const cuota = (monto / 13).toFixed(2);
+
+                const prestamoRef = db.ref("prestamos").push();
+                prestamoRef.set({
+                    cliente: cliente.nombre,
+                    cedula: cliente.cedula,
+                    monto,
+                    cuota,
+                    fechaInicio,
+                    pagosRealizados: 0,
+                    saldoPendiente: monto,
+                    usuario: localStorage.getItem("usuario")
+                }, () => {
+                    alert("Préstamo registrado con éxito.");
+                    cargarPrestamos();
+                });
+            });
+        }
+
+        // 🔹 Cargar préstamos en la tabla
+        function cargarPrestamos() {
+            const tabla = document.getElementById("tablaPrestamos");
+            tabla.innerHTML = "";
+
+            db.ref("prestamos").once("value", (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const prestamo = childSnapshot.val();
+                    const row = `<tr>
+                        <td>${prestamo.cliente}</td>
+                        <td>$${prestamo.monto}</td>
+                        <td>${prestamo.pagosRealizados}/13</td>
                         <td>
-                            <button onclick="abonar('${child.key}', ${data.monto})">Abonar</button>
-                            <button onclick="renovar('${child.key}', ${data.pagosRestantes})" ${data.pagosRestantes > 3 ? 'disabled' : ''}>Renovar</button>
-                            <button onclick="saldar('${child.key}')">Saldar</button>
+                            <button onclick="abonar('${childSnapshot.key}')">Abonar</button>
+                            <button onclick="saldar('${childSnapshot.key}')">Saldar</button>
                         </td>
                     </tr>`;
+                    tabla.innerHTML += row;
+                });
             });
+        }
+
+        // 🔹 Cargar datos al iniciar
+        document.addEventListener("DOMContentLoaded", () => {
+            cargarClientes();
+            cargarPrestamos();
         });
-
-        function abonar(id, monto) {
-            const abono = parseFloat(prompt("Monto a abonar:"));
-            if (abono > 0 && abono <= monto) {
-                db.child(id).update({ pagosRestantes: Math.max(0, monto - abono) });
-            }
-        }
-
-        function renovar(id, pagosRestantes) {
-            if (pagosRestantes <= 3) {
-                db.child(id).update({ pagosRestantes: 13 });
-                alert("Préstamo renovado.");
-            }
-        }
-
-        function saldar(id) {
-            if (confirm("¿Seguro que deseas saldar la deuda?")) {
-                db.child(id).remove();
-                alert("Deuda saldada.");
-            }
-        }
     </script>
 </body>
 </html>
