@@ -47,20 +47,16 @@
         .btn-abonar { background-color: #ffc107; color: black; }
         .btn-renovar { background-color: #6f42c1; }
         .btn-saldar { background-color: #dc3545; }
-        
-        /* Estilos para impresión de factura */
+        .factura {
+            display: none;
+            width: 300px;
+            background: white;
+            padding: 20px;
+            border: 1px solid #000;
+        }
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #factura, #factura * {
-                visibility: visible;
-            }
-            #factura {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+            .factura {
+                display: block;
             }
         }
     </style>
@@ -83,11 +79,15 @@
             <tbody id="listaPrestamos"></tbody>
         </table>
     </div>
-    
-    <div id="factura" style="display: none;"></div>
-    
+
+    <div class="factura" id="factura">
+        <h3>Prestan2</h3>
+        <p>La Solución a tus problemas</p>
+        <p id="facturaDetalle"></p>
+    </div>
+
     <script>
-             const firebaseConfig = {
+               const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -113,7 +113,7 @@
                             <td>${data.usuario}</td>
                             <td>
                                 <button class="btn-abonar" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
-                                <button class="btn-renovar" onclick="renovarPrestamo('${child.key}')">Renovar</button>
+                                <button class="btn-renovar" onclick="renovarPrestamo('${child.key}', ${data.cuotasRestantes})">Renovar</button>
                                 <button class="btn-saldar" onclick="saldarPrestamo('${child.key}')">Saldar</button>
                             </td>
                         </tr>
@@ -135,42 +135,55 @@
         }
 
         function imprimirFactura(prestamo, cuota, cuotasRestantes, fecha) {
-            const facturaHtml = `
-                <div>
-                    <h3>Prestan2</h3>
-                    <p>La Solución a tus Problemas</p>
-                    <hr>
-                    <p>Fecha: ${fecha}</p>
-                    <p>Cliente: ${prestamo.cliente}</p>
-                    <p>Dirección: ${prestamo.direccion}</p>
-                    <p>Monto Abonado: $${cuota.toFixed(2)}</p>
-                    <p>Número de Cuota: ${13 - cuotasRestantes}</p>
-                    <p>Cuotas Restantes: ${cuotasRestantes}</p>
-                    <p>Usuario: ${prestamo.usuario}</p>
-                    <hr>
-                    <p>Gracias por su Pago.</p>
-                </div>
+            const factura = `
+                -------------------------------------------------
+                                Prestan2
+                La Solución a tus problemas
+                -------------------------------------------------
+                Fecha: ${fecha}
+                Cliente: ${prestamo.cliente}
+                Dirección: ${prestamo.direccion}
+                -------------------------------------------------
+                Monto abonado: $${cuota.toFixed(2)}
+                Número de cuota: ${13 - cuotasRestantes}
+                Cuotas restantes: ${cuotasRestantes}
+                Usuario: ${prestamo.usuario}
+                -------------------------------------------------
+                Gracias por su pago.
+                -------------------------------------------------
             `;
-            
-            const facturaDiv = document.getElementById("factura");
-            facturaDiv.innerHTML = facturaHtml;
-            facturaDiv.style.display = "block";
+            document.getElementById("facturaDetalle").innerText = factura;
+            document.getElementById("factura").style.display = "block";
             window.print();
-            facturaDiv.style.display = "none";
         }
 
         function nuevoPrestamo() {
-            const cliente = prompt("Ingrese el nombre del cliente:");
-            const monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
-            const usuario = localStorage.getItem("usuario") || "Admin";
-            if (cliente && monto) {
-                db.ref("prestamos").push({
-                    cliente,
-                    monto,
-                    cuotasRestantes: 13,
-                    usuario
+            db.ref("clientes").once("value", snapshot => {
+                let clientes = [];
+                snapshot.forEach(child => {
+                    clientes.push({ id: child.key, nombre: child.val().nombre });
                 });
-            }
+
+                let opciones = clientes.map(c => `${c.id}: ${c.nombre}`).join("\n");
+                let seleccionado = prompt("Seleccione el ID del cliente:\n" + opciones);
+                let cliente = clientes.find(c => c.id === seleccionado);
+
+                if (!cliente) {
+                    alert("Cliente no válido");
+                    return;
+                }
+
+                let monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
+                let usuario = localStorage.getItem("usuario") || "Admin";
+                if (monto) {
+                    db.ref("prestamos").push({
+                        cliente: cliente.nombre,
+                        monto,
+                        cuotasRestantes: 13,
+                        usuario
+                    });
+                }
+            });
         }
 
         function registrarCliente() {
@@ -183,7 +196,30 @@
             }
         }
 
+        function renovarPrestamo(id, cuotasRestantes) {
+            if (cuotasRestantes < 10) {
+                alert("El cliente debe haber pagado al menos 10 cuotas para renovar.");
+                return;
+            }
+            db.ref(`prestamos/${id}`).update({ cuotasRestantes: 13 });
+            alert("Préstamo renovado exitosamente.");
+        }
+
+        function saldarPrestamo(id) {
+            db.ref(`prestamos/${id}`).once("value", snapshot => {
+                const data = snapshot.val();
+                if (confirm("¿Desea imprimir la factura de saldo?")) {
+                    imprimirFactura(data, data.monto, 0, new Date().toLocaleString());
+                }
+                db.ref(`prestamos/${id}`).remove();
+                alert("Préstamo saldado y eliminado de la base de datos.");
+            });
+        }
+
         cargarPrestamos();
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
