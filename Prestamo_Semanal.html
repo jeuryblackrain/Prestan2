@@ -10,80 +10,84 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
-            text-align: center;
             padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
+            margin: auto;
             background: #fff;
             padding: 20px;
-            margin: auto;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        input, select {
-            width: 90%;
-            padding: 8px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            background: #007bff;
-            border-radius: 5px;
-        }
-        button:hover {
-            background: #0056b3;
-        }
         table {
             width: 100%;
-            margin-top: 20px;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             padding: 8px;
-            text-align: center;
+            text-align: left;
         }
-        .hidden { display: none; }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        button {
+            padding: 10px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            border-radius: 5px;
+        }
+        .btn-registrar { background-color: #28a745; }
+        .btn-prestamo { background-color: #17a2b8; }
+        .btn-abonar { background-color: #ffc107; color: black; }
+        .btn-renovar { background-color: #6f42c1; }
+        .btn-saldar { background-color: #dc3545; }
+        
+        /* Estilos para impresión de factura */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #factura, #factura * {
+                visibility: visible;
+            }
+            #factura {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Registro de Clientes</h2>
-        <input type="text" id="nombre" placeholder="Nombre Completo">
-        <input type="text" id="cedula" placeholder="Cédula (XXX-XXXXXXX-X)" maxlength="13">
-        <input type="text" id="telefono" placeholder="Teléfono (XXX-XXX-XXXX)" maxlength="12">
-        <input type="text" id="direccion" placeholder="Dirección">
-        <button onclick="registrarCliente()">Registrar Cliente</button>
-        <h2>Nuevo Préstamo</h2>
-        <select id="clientes"></select>
-        <input type="number" id="monto" placeholder="Monto">
-        <button onclick="nuevoPrestamo()">Otorgar Préstamo</button>
-        <h2>Lista de Préstamos</h2>
-        <table id="listaPrestamos">
-            <tr>
-                <th>Cliente</th>
-                <th>Monto</th>
-                <th>Cuotas</th>
-                <th>Acciones</th>
-            </tr>
+        <h2>Préstamos Semanales</h2>
+        <button class="btn-registrar" onclick="registrarCliente()">Registrar Cliente</button>
+        <button class="btn-prestamo" onclick="nuevoPrestamo()">Nuevo Préstamo</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Cuotas Restantes</th>
+                    <th>Usuario</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="listaPrestamos"></tbody>
         </table>
     </div>
-
-    <div class="hidden" id="factura">
-        <h2>Prestan2</h2>
-        <p>La Solución a tus Problemas</p>
-        <p id="facturaInfo"></p>
-        <button onclick="window.print()">Imprimir</button>
-    </div>
-
+    
+    <div id="factura" style="display: none;"></div>
+    
     <script>
-               const firebaseConfig = {
+             const firebaseConfig = {
           apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
           authDomain: "prestan2-6059e.firebaseapp.com",
           databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
@@ -95,79 +99,90 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function registrarCliente() {
-            let nombre = document.getElementById("nombre").value;
-            let cedula = document.getElementById("cedula").value;
-            let telefono = document.getElementById("telefono").value;
-            let direccion = document.getElementById("direccion").value;
-            let id = db.ref("clientes").push().key;
-            db.ref("clientes/" + id).set({ nombre, cedula, telefono, direccion });
-            cargarClientes();
-        }
-
-        function cargarClientes() {
-            db.ref("clientes").once("value", (snapshot) => {
-                let select = document.getElementById("clientes");
-                select.innerHTML = "";
-                snapshot.forEach((child) => {
-                    let option = document.createElement("option");
-                    option.value = child.key;
-                    option.textContent = child.val().nombre;
-                    select.appendChild(option);
-                });
-            });
-        }
-
-        function nuevoPrestamo() {
-            let clienteId = document.getElementById("clientes").value;
-            let monto = parseFloat(document.getElementById("monto").value);
-            let cuotas = monto / 10;
-            let usuario = "Usuario123";
-            let id = db.ref("prestamos").push().key;
-            db.ref("prestamos/" + id).set({ clienteId, monto, cuotas, usuario });
-            cargarPrestamos();
-        }
-
         function cargarPrestamos() {
-            db.ref("prestamos").once("value", (snapshot) => {
-                let tabla = document.getElementById("listaPrestamos");
-                tabla.innerHTML = `<tr><th>Cliente</th><th>Monto</th><th>Cuotas</th><th>Acciones</th></tr>`;
-                snapshot.forEach((child) => {
-                    let data = child.val();
-                    db.ref("clientes/" + data.clienteId).once("value", (snap) => {
-                        let cliente = snap.val().nombre;
-                        let row = tabla.insertRow(-1);
-                        row.innerHTML = `<td>${cliente}</td><td>${data.monto}</td><td>${data.cuotas}</td>
-                        <td><button onclick="abonar('${child.key}')">Abonar</button></td>`;
-                    });
+            db.ref("prestamos").on("value", snapshot => {
+                const tbody = document.getElementById("listaPrestamos");
+                tbody.innerHTML = "";
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${data.cliente}</td>
+                            <td>${data.monto}</td>
+                            <td>${data.cuotasRestantes}</td>
+                            <td>${data.usuario}</td>
+                            <td>
+                                <button class="btn-abonar" onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
+                                <button class="btn-renovar" onclick="renovarPrestamo('${child.key}')">Renovar</button>
+                                <button class="btn-saldar" onclick="saldarPrestamo('${child.key}')">Saldar</button>
+                            </td>
+                        </tr>
+                    `;
                 });
             });
         }
 
-        function abonar(prestamoId) {
-            db.ref("prestamos/" + prestamoId).once("value", (snapshot) => {
-                let data = snapshot.val();
-                if (data.cuotas > 0) {
-                    data.monto -= data.monto / 10;
-                    data.cuotas -= 1;
-                    db.ref("prestamos/" + prestamoId).update(data);
-                    generarFactura(data);
-                    cargarPrestamos();
+        function abonar(prestamoId, cuota) {
+            const fecha = new Date().toLocaleString();
+            db.ref(`prestamos/${prestamoId}`).once("value", snapshot => {
+                const data = snapshot.val();
+                if (data.cuotasRestantes > 0) {
+                    const nuevasCuotas = data.cuotasRestantes - 1;
+                    db.ref(`prestamos/${prestamoId}`).update({ cuotasRestantes: nuevasCuotas });
+                    imprimirFactura(data, cuota, nuevasCuotas, fecha);
                 }
             });
         }
 
-        function generarFactura(data) {
-            document.getElementById("facturaInfo").innerHTML = `
-                <p>Fecha: ${new Date().toLocaleDateString()} - Usuario: ${data.usuario}</p>
-                <p>Cliente: ${data.cliente}</p>
-                <p>Monto: ${data.monto.toFixed(2)}</p>
-                <p>Cuotas Restantes: ${data.cuotas}</p>
+        function imprimirFactura(prestamo, cuota, cuotasRestantes, fecha) {
+            const facturaHtml = `
+                <div>
+                    <h3>Prestan2</h3>
+                    <p>La Solución a tus Problemas</p>
+                    <hr>
+                    <p>Fecha: ${fecha}</p>
+                    <p>Cliente: ${prestamo.cliente}</p>
+                    <p>Dirección: ${prestamo.direccion}</p>
+                    <p>Monto Abonado: $${cuota.toFixed(2)}</p>
+                    <p>Número de Cuota: ${13 - cuotasRestantes}</p>
+                    <p>Cuotas Restantes: ${cuotasRestantes}</p>
+                    <p>Usuario: ${prestamo.usuario}</p>
+                    <hr>
+                    <p>Gracias por su Pago.</p>
+                </div>
             `;
-            document.getElementById("factura").classList.remove("hidden");
+            
+            const facturaDiv = document.getElementById("factura");
+            facturaDiv.innerHTML = facturaHtml;
+            facturaDiv.style.display = "block";
+            window.print();
+            facturaDiv.style.display = "none";
         }
 
-        cargarClientes();
+        function nuevoPrestamo() {
+            const cliente = prompt("Ingrese el nombre del cliente:");
+            const monto = parseFloat(prompt("Ingrese el monto del préstamo:"));
+            const usuario = localStorage.getItem("usuario") || "Admin";
+            if (cliente && monto) {
+                db.ref("prestamos").push({
+                    cliente,
+                    monto,
+                    cuotasRestantes: 13,
+                    usuario
+                });
+            }
+        }
+
+        function registrarCliente() {
+            const nombre = prompt("Nombre completo:");
+            const cedula = prompt("Cédula (Formato: 000-0000000-0):");
+            const telefono = prompt("Teléfono (Formato: 000-000-0000):");
+            const direccion = prompt("Dirección:");
+            if (nombre && cedula && telefono && direccion) {
+                db.ref("clientes").push({ nombre, cedula, telefono, direccion });
+            }
+        }
+
         cargarPrestamos();
     </script>
 </body>
