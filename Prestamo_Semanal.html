@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Préstamos Semanal</title>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        input, button { margin: 5px; padding: 10px; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; }
+        th { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Préstamos Semanal</h2>
+        <button onclick="registrarCliente()">Registrar Cliente</button>
+        <button onclick="nuevoPrestamo()">Nuevo Préstamo</button>
+        
+        <h3>Lista de Préstamos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Pagos Restantes</th>
+                    <th>Fecha Préstamo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="listaPrestamos"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const firebaseConfig = { /* Agrega tus credenciales */ };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref("prestamos");
+
+        function registrarCliente() {
+            const nombre = prompt("Nombre completo:");
+            const cedula = prompt("Cédula:");
+            const telefono = prompt("Teléfono:");
+            const direccion = prompt("Dirección:");
+            if (nombre && cedula && telefono && direccion) {
+                firebase.database().ref("clientes").push({ nombre, cedula, telefono, direccion });
+                alert("Cliente registrado correctamente.");
+            }
+        }
+
+        function nuevoPrestamo() {
+            const cliente = prompt("Nombre del cliente:");
+            const usuario = localStorage.getItem("usuario");
+            const monto = parseFloat(prompt("Monto del préstamo:"));
+            if (cliente && usuario && monto) {
+                const fechaPrestamo = new Date().toISOString().split('T')[0];
+                const pagos = 13;
+                db.push({ cliente, usuario, monto, pagosRestantes: pagos, fechaPrestamo });
+                alert("Préstamo registrado correctamente.");
+            }
+        }
+
+        db.on("value", snapshot => {
+            const lista = document.getElementById("listaPrestamos");
+            lista.innerHTML = "";
+            snapshot.forEach(child => {
+                const data = child.val();
+                lista.innerHTML += `
+                    <tr>
+                        <td>${data.cliente}</td>
+                        <td>$${data.monto}</td>
+                        <td>${data.pagosRestantes}</td>
+                        <td>${data.fechaPrestamo}</td>
+                        <td>
+                            <button onclick="abonar('${child.key}', ${data.monto})">Abonar</button>
+                            <button onclick="renovar('${child.key}', ${data.pagosRestantes})" ${data.pagosRestantes > 3 ? 'disabled' : ''}>Renovar</button>
+                            <button onclick="saldar('${child.key}')">Saldar</button>
+                        </td>
+                    </tr>`;
+            });
+        });
+
+        function abonar(id, monto) {
+            const abono = parseFloat(prompt("Monto a abonar:"));
+            if (abono > 0 && abono <= monto) {
+                db.child(id).update({ pagosRestantes: Math.max(0, monto - abono) });
+            }
+        }
+
+        function renovar(id, pagosRestantes) {
+            if (pagosRestantes <= 3) {
+                db.child(id).update({ pagosRestantes: 13 });
+                alert("Préstamo renovado.");
+            }
+        }
+
+        function saldar(id) {
+            if (confirm("¿Seguro que deseas saldar la deuda?")) {
+                db.child(id).remove();
+                alert("Deuda saldada.");
+            }
+        }
+    </script>
+</body>
+</html>
