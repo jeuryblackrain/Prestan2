@@ -207,7 +207,7 @@
                         <td>$${prestamo.monto}</td>
                         <td>${prestamo.pagosRealizados}/13</td>
                         <td>
-                            <button onclick="abonar('${childSnapshot.key}')">Abonar</button>
+                            <button onclick="realizarAbono('{idDelPrestamo}')">Abonar</button>
                             <button onclick="saldar('${childSnapshot.key}')">Saldar</button>
                         </td>
                     </tr>`;
@@ -221,6 +221,66 @@
             cargarClientes();
             cargarPrestamos();
         });
+
+
+        // 🔹 Función para realizar un abono
+        function realizarAbono(idPrestamo) {
+            const prestamoRef = firebase.database().ref("prestamos/" + idPrestamo);
+
+            prestamoRef.once("value", (snapshot) => {
+                if (snapshot.exists()) {
+                    const prestamo = snapshot.val();
+                    const pago = prestamo.monto / 10; // Pago = Monto total / 10
+                    const nuevoSaldo = prestamo.saldo - pago;
+
+                    // Actualizar la base de datos
+                    prestamoRef.update({
+                        saldo: nuevoSaldo
+                    });
+
+                    // Llamar a la función para imprimir la factura
+                    imprimirFactura(prestamo, pago);
+
+                    alert(`Pago realizado con éxito. Nuevo saldo: ${nuevoSaldo}`);
+                }
+            });
+        }
+
+        // 🔹 Función para imprimir la factura
+            function imprimirFactura(prestamo, pago) {
+                const fechaActual = new Date().toLocaleDateString();
+                const factura = `
+                    <html>
+                    <head>
+                        <title>Factura de Pago</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            h2 { text-align: center; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                            th { background-color: #f4f4f4; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Factura de Pago</h2>
+                        <p><strong>Fecha:</strong> ${fechaActual}</p>
+                        <p><strong>Cliente:</strong> ${prestamo.nombreCliente}</p>
+                        <p><strong>Monto Total:</strong> ${prestamo.monto} RD$</p>
+                        <p><strong>Pago realizado:</strong> ${pago} RD$</p>
+                        <p><strong>Saldo Restante:</strong> ${prestamo.saldo - pago} RD$</p>
+                        <p><strong>Registrado por:</strong> ${prestamo.usuario}</p>
+
+                        <button onclick="window.print()">Imprimir</button>
+                    </body>
+                    </html>
+                `;
+
+                const ventana = window.open("", "_blank");
+                ventana.document.write(factura);
+                ventana.document.close();
+            }
+
+
     </script>
 </body>
 </html>
