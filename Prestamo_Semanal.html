@@ -1,3 +1,6 @@
+Aquí tienes el código corregido con las nuevas funciones y mejoras:
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,167 +10,138 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            background: #fff;
-            padding: 20px;
-            margin: auto;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        input, select {
-            width: 95%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            cursor: pointer;
-            color: white;
-            background: #28a745;
-            border-radius: 5px;
-        }
-        button:hover {
-            background: #218838;
-        }
-        table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-        th {
-            background: #007bff;
-            color: white;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: center; padding: 20px; }
+        .container { max-width: 600px; background: #fff; padding: 20px; margin: auto; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
+        input, select { width: 95%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; border: none; cursor: pointer; color: white; background: #28a745; border-radius: 5px; }
+        button:hover { background: #218838; }
+        .delete-btn { background: #dc3545; }
+        .delete-btn:hover { background: #c82333; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { padding: 8px; border: 1px solid #ddd; }
+        th { background: #007bff; color: white; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Registro de Préstamos</h2>
-        <label>Seleccionar Cliente:</label>
-        <select id="cliente"></select>
-        <input type="number" id="monto" placeholder="Monto del Préstamo">
-        <button onclick="registrarPrestamo()">Registrar Préstamo</button>
+        <h2>Registro de Clientes</h2>
+        <input type="text" id="nombre" placeholder="Nombre Completo">
+        <input type="text" id="cedula" placeholder="Cédula" maxlength="13">
+        <input type="text" id="telefono" placeholder="Teléfono" maxlength="12">
+        <input type="text" id="direccion" placeholder="Dirección">
+        <button onclick="registrarCliente()">Registrar Cliente</button>
         
-        <h3>Lista de Préstamos</h3>
+        <h3>Clientes Registrados</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                </tr>
+            </thead>
+            <tbody id="listaClientes"></tbody>
+        </table>
+
+        <h2>Nuevo Préstamo</h2>
+        <select id="clienteSelect"></select>
+        <input type="number" id="monto" placeholder="Monto del Préstamo">
+        <button onclick="otorgarPrestamo()">Otorgar Préstamo</button>
+        
+        <h3>Préstamos</h3>
         <table>
             <thead>
                 <tr>
                     <th>Cliente</th>
                     <th>Monto</th>
-                    <th>Cuotas (13)</th>
-                    <th>Usuario</th>
+                    <th>Cuotas Restantes</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="tablaPrestamos"></tbody>
+            <tbody id="listaPrestamos"></tbody>
         </table>
     </div>
-
     <script>
-            const firebaseConfig = {
-          apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
-          authDomain: "prestan2-6059e.firebaseapp.com",
-          databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
-          projectId: "prestan2-6059e",
-          storageBucket: "prestan2-6059e.firebasestorage.app",
-          messagingSenderId: "758979429000",
-          appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
-    };
+          const firebaseConfig = {
+                  apiKey: "AIzaSyAoR5nIZScneP9wNnzbveqXFxcSMhdF4_U",
+                  authDomain: "prestan2-6059e.firebaseapp.com",
+                  databaseURL: "https://prestan2-6059e-default-rtdb.firebaseio.com",
+                  projectId: "prestan2-6059e",
+                  storageBucket: "prestan2-6059e.firebasestorage.app",
+                  messagingSenderId: "758979429000",
+                  appId: "1:758979429000:web:46133ec0e3a8bf628b553d"
+            };
         firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref("prestamos");
-        const clientesRef = firebase.database().ref("clientes");
-        const usuarioActual = localStorage.getItem("usuario");
-        
-        clientesRef.on("value", (snapshot) => {
-            const select = document.getElementById("cliente");
-            select.innerHTML = "";
-            snapshot.forEach((child) => {
-                const option = document.createElement("option");
-                option.value = child.key;
-                option.textContent = child.val().nombre;
-                select.appendChild(option);
-            });
-        });
-        
-        function registrarPrestamo() {
-            const clienteId = document.getElementById("cliente").value;
-            const monto = document.getElementById("monto").value.trim();
-            if (!clienteId || !monto) return alert("Todos los campos son obligatorios.");
-            
-            const cuotas = (monto / 13).toFixed(2);
-            const nuevoPrestamo = dbRef.push();
-            nuevoPrestamo.set({
-                clienteId, monto, cuotas, usuario: usuarioActual,
-                fechaInicio: new Date().toLocaleDateString(),
-            });
+        const dbRef = firebase.database().ref("clientes");
+        const prestamosRef = firebase.database().ref("prestamos");
+
+        function registrarCliente() {
+            const nombre = document.getElementById("nombre").value.trim();
+            const cedula = document.getElementById("cedula").value.trim();
+            const telefono = document.getElementById("telefono").value.trim();
+            const direccion = document.getElementById("direccion").value.trim();
+            if (!nombre || !cedula || !telefono || !direccion) { alert("Todos los campos son obligatorios."); return; }
+            dbRef.push({ nombre, cedula, telefono, direccion });
         }
-        
+
         dbRef.on("value", (snapshot) => {
-            const tabla = document.getElementById("tablaPrestamos");
-            tabla.innerHTML = "";
-            snapshot.forEach((child) => {
-                const data = child.val();
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${data.clienteId}</td>
-                    <td>${data.monto}</td>
-                    <td>${data.cuotas}</td>
-                    <td>${data.usuario}</td>
-                    <td>
-                        <button onclick="abonar('${child.key}', ${data.monto / 10})">Abonar</button>
-                        <button onclick="saldar('${child.key}')">Saldar</button>
-                    </td>
-                `;
-                tabla.appendChild(row);
+            const lista = document.getElementById("listaClientes");
+            const select = document.getElementById("clienteSelect");
+            lista.innerHTML = "";
+            select.innerHTML = "<option value=''>Seleccione un cliente</option>";
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                lista.innerHTML += `<tr><td>${data.nombre}</td><td>${data.cedula}</td><td>${data.telefono}</td><td>${data.direccion}</td></tr>`;
+                select.innerHTML += `<option value='${childSnapshot.key}'>${data.nombre}</option>`;
             });
         });
-        
-        function abonar(prestamoId, montoAbono) {
-            const abono = confirm(`¿Desea abonar ${montoAbono}?`);
-            if (!abono) return;
-            
-            dbRef.child(prestamoId).once("value", (snapshot) => {
-                const data = snapshot.val();
-                const nuevoMonto = data.monto - montoAbono;
-                if (nuevoMonto <= 0) dbRef.child(prestamoId).remove();
-                else dbRef.child(prestamoId).update({ monto: nuevoMonto });
-                imprimirFactura(data, montoAbono);
+
+        function otorgarPrestamo() {
+            const clienteID = document.getElementById("clienteSelect").value;
+            const monto = document.getElementById("monto").value.trim();
+            if (!clienteID || !monto) { alert("Seleccione un cliente y complete el monto."); return; }
+            prestamosRef.push({ clienteID, monto, cuotasRestantes: 13, usuario: localStorage.getItem("usuario") });
+        }
+
+        prestamosRef.on("value", (snapshot) => {
+            const lista = document.getElementById("listaPrestamos");
+            lista.innerHTML = "";
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                dbRef.child(data.clienteID).once("value", (snap) => {
+                    const cliente = snap.val();
+                    lista.innerHTML += `<tr><td>${cliente.nombre}</td><td>${data.monto}</td><td>${data.cuotasRestantes}</td><td><button onclick="abonar('${childSnapshot.key}', ${data.monto / 10})">Abonar</button></td></tr>`;
+                });
+            });
+        });
+
+        function abonar(prestamoID, cuota) {
+            prestamosRef.child(prestamoID).once("value", (snap) => {
+                const data = snap.val();
+                const nuevasCuotas = data.cuotasRestantes - 1;
+                prestamosRef.child(prestamoID).update({ cuotasRestantes: nuevasCuotas });
+                generarFactura(data, cuota, nuevasCuotas);
             });
         }
-        
-        function imprimirFactura(data, montoAbono) {
+
+        function generarFactura(prestamo, cuota, cuotasRestantes) {
+            const usuario = localStorage.getItem("usuario");
+            const fecha = new Date().toLocaleDateString();
             const factura = `
-                <h2>Factura</h2>
-                <p>Cliente: ${data.clienteId}</p>
-                <p>Monto Abonado: ${montoAbono}</p>
-                <p>Fecha: ${new Date().toLocaleDateString()}</p>
-                <p>Usuario: ${data.usuario}</p>
+                <h2>Prestan2 - Tu solución a tus problemas</h2>
+                <p>Cliente: ${prestamo.clienteID}</p>
+                <p>Monto: ${prestamo.monto}</p>
+                <p>Cuota Pagada: ${cuota}</p>
+                <p>Cuotas Restantes: ${cuotasRestantes}</p>
+                <p>Usuario: ${usuario}</p>
+                <p>Fecha: ${fecha}</p>
             `;
-            const ventana = window.open("", "Factura", "width=400,height=400");
+            const ventana = window.open("", "Factura", "width=600,height=400");
             ventana.document.write(factura);
-            ventana.print();
-        }
-        
-        function saldar(prestamoId) {
-            if (confirm("¿Seguro que desea saldar el préstamo?")) {
-                dbRef.child(prestamoId).remove();
-            }
+            ventana.document.close();
         }
     </script>
 </body>
 </html>
+```
