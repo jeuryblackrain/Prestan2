@@ -79,7 +79,7 @@
         const fecha = sessionStorage.getItem("fecha");
 
         if (!usuario) {
-            window.location.href = "Index.html"; // Redirige si no hay sesión activa
+            window.location.href = "index.html"; // Redirige si no hay sesión activa
         } else {
             document.getElementById("nombreUsuario").textContent = usuario;
             document.getElementById("fechaActual").textContent = "Fecha: " + fecha;
@@ -88,7 +88,7 @@
         // Función para cerrar sesión
         function cerrarSesion() {
             sessionStorage.clear(); // Eliminar sesión
-            window.location.href = "Index.html"; // Redirigir al login
+            window.location.href = "index.html"; // Redirigir al login
         }
     </script>
 
